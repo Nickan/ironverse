@@ -49,12 +49,18 @@ fn add(
         color = Color::rgba(0.0, 0.0, 1.0, 0.5);
       }
 
+      let mut scale = data.lod as f32 * 2.0;
+      if scale == 0.0 {
+        scale = 1.0;
+      }
+
       let mat = materials.add(color.into());
       commands
         .spawn(MaterialMeshBundle {
           mesh: mesh_handle,
           material: mat,
-          transform: Transform::from_translation(pos),
+          transform: Transform::from_translation(pos)
+            .with_scale(Vec3::new(scale, scale, scale)),
           ..default()
         })
         .insert(ChunkGraphics { 

@@ -381,8 +381,6 @@ fn show_diagnostic_texts(
         }
       });
     });
-
-  
 }
 
 

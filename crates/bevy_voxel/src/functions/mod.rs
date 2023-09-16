@@ -125,7 +125,7 @@ fn load_lod_chunks(
   mut chunks: Query<(&Center, &mut Chunks, &mut MeshComponent), Added<Chunks>>
 ) {
   for (center, mut chunks, mut mesh_comp) in &mut chunks {
-    for lod in 1..res.ranges.len() - 1 {
+    for lod in 1..res.ranges.len() - 3 {
       let keys = res.get_keys_by_lod(center.key, lod);
       request_load_chunk(&keys, &mut res, lod);
     }

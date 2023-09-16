@@ -379,13 +379,110 @@ impl ChunkManager {
     chunk
   }
 
-  // pub fn new_chunk2(key: &[i64; 3], depth: u32, lod_level: u8, noise: OpenSimplex) -> Chunk {
-  //   ChunkManager::new_chunk(key, depth as u8, lod_level, noise)
-  // }
+  pub fn new_chunk2(
+    key: &[i64; 3], depth: u8, lod: usize, noise: OpenSimplex
+  ) -> Chunk {
 
-  // pub fn new_chunk3(&self, key: &[i64; 3], lod_level: u8) -> Chunk {
-  //   ChunkManager::new_chunk(key, self.depth as u8, lod_level, self.noise)
-  // }
+    let size = 2_i32.pow(depth as u32) as u32;
+    // if lod_level > depth {
+    //   panic!("lod_level: {} cannot be higher than depth: {}", lod_level, depth);
+    // }
+    let seamless_size = size - 2;
+    let region_key = world_key_to_region_key(key, seamless_size);
+
+    let region_middle_pos = region_middle_pos(seamless_size) as i64;
+    let start_x = (region_key[0] * seamless_size) + 0;
+    let start_y = (region_key[1] * seamless_size) + 0;
+    let start_z = (region_key[2] * seamless_size) + 0;
+
+    let lod_depth = depth - lod as u8;
+    let new_octree = VoxelOctree::new(0, lod_depth);
+    let mut chunk = Chunk {
+      key: key.clone(),
+      lod: lod,
+      octree: new_octree,
+      mode: ChunkMode::None,
+      is_default: true,
+    };
+
+    let mut has_air = false;
+    let mut has_value = false;
+    let mut data = Vec::new();
+
+    let start = 0;
+    let end = chunk.octree.get_size();
+
+    let mut steps = lod as u32 * 2;
+    if steps == 0 {
+      steps = 1;
+    }
+    // steps = 1;
+
+    println!("end {} steps {}", end, steps);
+    for octree_x in start..end {
+      // println!("octree_x {}", octree_x);
+      for octree_y in start..end {
+        for octree_z in start..end {
+          let x = start_x + (octree_x * steps);
+          let y = start_y + (octree_y * steps);
+          let z = start_z + (octree_z * steps);
+          
+          let elevation = noise_elevation(&x, &z, &region_middle_pos, noise);
+          let mid_y = y as i64 - region_middle_pos;
+
+          /* Uncomment this later, testing for now */
+          let voxel = if mid_y < elevation { 1 } else { 0 };
+          // let voxel = if mid_y < 0 { 1 } else { 0 };
+          data.push([octree_x, octree_y, octree_z, voxel]);
+
+          /*
+            TODO:
+              Conditions to determine if Chunk is needed to be rendered and create collider
+                Mode:
+                  Empty/Air
+                  Inner
+                  Visible
+                Air
+                  If all values are 0
+                Inner
+                  If all values are 1
+                Visible
+                  ?
+          */
+          if octree_x <= end - 1
+            && octree_y <= end - 1
+            && octree_z <= end - 1
+          {
+            if voxel == 0 {
+              has_air = true;
+              // println!("Air {} {} {}", octree_x, octree_y, octree_z);
+            }
+            if voxel == 1 {
+              has_value = true;
+              // println!("Voxel {} {} {}", octree_x, octree_y, octree_z);
+            }
+          }
+        }
+      }
+    }
+
+    chunk.octree = VoxelOctree::new_from_3d_array(
+      0, chunk.octree.get_depth(), &data, ParentValueType::Lod
+    );
+    // chunk.mode = chunk_mode(&chunk.octree);
+
+    /*
+      TODO: Have to update mode detector
+    */
+    if (!has_air && has_value) || (has_air && !has_value) {
+      chunk.mode = ChunkMode::Air;  // Should be renamed as empty
+    }
+    if has_air && has_value {
+      chunk.mode = ChunkMode::Loaded;
+    }
+    // println!("{} {} {}", has_air, has_value, end - 2);
+    chunk
+  }
 
   pub fn chunk_mode(self: &Self, key: &[i64; 3]) -> ChunkMode {
     let chunk = self.chunks.get(key);
