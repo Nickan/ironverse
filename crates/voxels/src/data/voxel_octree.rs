@@ -1,4 +1,4 @@
-use crate::utils::get_length;
+use crate::{utils::get_length, chunk::chunk_manager::ChunkManager};
 use super::surface_nets::*;
 use serde::{Serialize, Deserialize};
 
@@ -409,6 +409,8 @@ impl VoxelOctree {
     key: [i64; 3],
     lod: usize,
   ) -> MeshData {
+
+
     match mode {
       VoxelMode::SurfaceNets => get_surface_nets(
         self, 
@@ -418,7 +420,28 @@ impl VoxelOctree {
         key,
         lod
       ),
-      _ => panic!("VoxelMode {:?} implementation not existing yet", mode),
+      _ => panic!("VoxelMode {:?} implementation not yet existing", mode),
+    }
+  }
+
+  pub fn compute_mesh2(
+    &self, mode: VoxelMode, 
+    manager: &ChunkManager,
+    colors: &Vec<[f32; 3]>,
+    key: [i64; 3],
+    lod: usize,
+  ) -> MeshData {
+    let depth = manager.depth - lod as u32;
+    match mode {
+      VoxelMode::SurfaceNets => get_surface_nets(
+        self, 
+        &mut VoxelReuse::new(depth, 3), 
+        colors, 
+        manager.voxel_scale,
+        key,
+        lod
+      ),
+      _ => panic!("VoxelMode {:?} implementation not yet existing", mode),
     }
   }
 

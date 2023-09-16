@@ -418,7 +418,7 @@ impl ChunkManager {
     }
     // steps = 1;
 
-    println!("end {} steps {}", end, steps);
+    // println!("end {} steps {}", end, steps);
     for octree_x in start..end {
       // println!("octree_x {}", octree_x);
       for octree_y in start..end {
@@ -426,6 +426,8 @@ impl ChunkManager {
           let x = start_x + (octree_x * steps);
           let y = start_y + (octree_y * steps);
           let z = start_z + (octree_z * steps);
+
+          // println!("y {}", y);
           
           let elevation = noise_elevation(&x, &z, &region_middle_pos, noise);
           let mid_y = y as i64 - region_middle_pos;
@@ -434,6 +436,10 @@ impl ChunkManager {
           let voxel = if mid_y < elevation { 1 } else { 0 };
           // let voxel = if mid_y < 0 { 1 } else { 0 };
           data.push([octree_x, octree_y, octree_z, voxel]);
+
+          if voxel == 0 {
+            // println!("y {}", y);
+          }
 
           /*
             TODO:
@@ -482,6 +488,10 @@ impl ChunkManager {
     }
     // println!("{} {} {}", has_air, has_value, end - 2);
     chunk
+  }
+
+  pub fn new_chunk3(&self, key: &[i64; 3], depth: u8, lod: usize) -> Chunk {
+    ChunkManager::new_chunk2(key, depth, lod, self.noise)
   }
 
   pub fn chunk_mode(self: &Self, key: &[i64; 3]) -> ChunkMode {

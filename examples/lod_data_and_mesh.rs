@@ -5,7 +5,7 @@ use bevy_egui::{EguiContexts, egui::{Frame, Color32, Pos2, Rect, Style, Vec2, Ri
 use bevy_flycam::{NoCameraAndGrabPlugin, FlyCam, NoCameraPlayerPlugin};
 use bevy_voxel::{Center, BevyVoxelResource};
 use utils::Utils;
-use voxels::{chunk::chunk_manager::ChunkManager, data::{voxel_octree::VoxelMode, surface_nets::VoxelReuse}};
+use voxels::{chunk::{chunk_manager::ChunkManager, adjacent_keys}, data::{voxel_octree::VoxelMode, surface_nets::VoxelReuse}};
 
 
 fn main() {
@@ -27,7 +27,9 @@ fn main() {
     .insert_resource(LocalResource::default())
     .insert_resource(BevyVoxelResource::default())
     .add_startup_system(startup)
-    .add_startup_system(startup_lod)
+    // .add_startup_system(default_main_chunks)
+    .add_startup_system(main_chunks)
+    .add_startup_system(lod_chunks)
     .add_system(show_diagnostic_texts)
     // .add_system(move_center)
     // .add_system(remove_out_of_range_meshes)
@@ -42,8 +44,8 @@ fn startup(
 ) {
   commands
     .spawn(Camera3dBundle {
-      transform: Transform::from_translation(Vec3::new(12.7, 23.8, -18.9))
-      .looking_to(Vec3::new(0.0, -0.6, 0.7), Vec3::Y),
+      transform: Transform::from_translation(Vec3::new(31.84, 79.69, -45.28))
+      .looking_to(Vec3::new(0.00, -0.86, 0.49), Vec3::Y),
       ..Default::default()
     })
     // .insert(Camera)
@@ -83,70 +85,13 @@ fn startup(
   });
 }
 
-/// White for lod 0
-/// Red for lod 1
-/// Green for lod 2
-/// Blue for lod 3
-fn startup_lod(
+fn default_main_chunks(
   mut commands: Commands,
   mut meshes: ResMut<Assets<Mesh>>,
   mut materials: ResMut<Assets<StandardMaterial>>,
   mut local_res: ResMut<LocalResource>,
   bevy_voxel_res: ResMut<BevyVoxelResource>,
 ) {
-/*   
-  let ranges = local_res.ranges.clone();
-  let key = [0, 0, 0];
-  for lod in 0..ranges.len() - 1 {
-    let keys = Utils::get_keys_by_lod(&ranges, &key, lod);
-    for k in keys.iter() {
-      if k[1] != -1 { continue; } // Ignore y
-
-      let chunk = ChunkManager::new_chunk(
-        k, 
-        local_res.chunk_manager.depth as u8, 
-        lod, 
-        local_res.chunk_manager.noise,
-      );
-      let data = chunk.octree.compute_mesh(
-        VoxelMode::SurfaceNets, 
-        &mut VoxelReuse::default(), 
-        &local_res.colors, 
-        1.0, 
-        *k, 
-        lod
-      );
-
-      let c = local_res.colors[lod];
-
-      // let mut scale = data.lod as f32 * 2.0;
-      // if scale == 0.0 {
-      //   scale = 1.0;
-      // }
-
-      let scale = 1.0;
-
-      let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
-      render_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.positions.clone());
-      render_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, data.normals.clone());
-      render_mesh.set_indices(Some(Indices::U32(data.indices.clone())));
-
-      let mesh_handle = meshes.add(render_mesh);
-
-      let pos = bevy_voxel_res.get_pos(chunk.key);
-      commands
-        .spawn(MaterialMeshBundle {
-          mesh: mesh_handle,
-          material: materials.add(Color::rgb(c[0], c[1], c[2]).into()),
-          transform: Transform::from_translation(pos)
-            .with_scale(Vec3::new(scale, scale, scale)),
-          ..default()
-        })
-      .insert(MeshGraphics { lod: lod });
-    }
-  } 
-  */
-
   let depth = local_res.chunk_manager.depth as u8;
   let key = [0, -1, 0];
   let lod = 0;
@@ -191,56 +136,100 @@ fn startup_lod(
       ..default()
     })
   .insert(MeshGraphics { lod: lod });
+}
 
 
-  let lod = 1;
+fn main_chunks(
+  mut commands: Commands,
+  mut meshes: ResMut<Assets<Mesh>>,
+  mut materials: ResMut<Assets<StandardMaterial>>,
+  mut local_res: ResMut<LocalResource>,
+  bevy_voxel_res: ResMut<BevyVoxelResource>,
+) {
+  let pos_adj = Vec3::new(0.0, 0.0, 0.0);
+
   let depth = local_res.chunk_manager.depth as u8;
-  let chunk = ChunkManager::new_chunk2(
-    &key, 
-    depth, 
-    lod, 
-    local_res.chunk_manager.noise,
-  );
-  let lod_depth = depth - lod as u8;
-  let data = chunk.octree.compute_mesh(
-    VoxelMode::SurfaceNets, 
-    &mut VoxelReuse::new(lod_depth as u32, 3), 
-    &local_res.colors, 
-    1.0, 
-    key, 
-    lod
-  );
+  let key = [0, -1, 0];
+  let lod = 0;
+  
+  let keys = adjacent_keys(&key, 1, true);
+  for k in keys.iter() {
+    let chunk = local_res.chunk_manager.new_chunk3(k, depth, lod);
+    let data = chunk.octree.compute_mesh2(
+      VoxelMode::SurfaceNets, &local_res.chunk_manager, &local_res.colors,key, lod
+    );
+    let c = local_res.colors[lod];
+    let mut scale = data.lod as f32 * 2.0;
+    if scale == 0.0 {
+      scale = 1.0;
+    }
 
-  println!("data.indices.len() {}", data.indices.len());
+    let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
+    render_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.positions.clone());
+    render_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, data.normals.clone());
+    render_mesh.set_indices(Some(Indices::U32(data.indices.clone())));
 
-  let c = local_res.colors[lod];
+    let mesh_handle = meshes.add(render_mesh);
 
-  let mut scale = data.lod as f32 * 2.0;
-  if scale == 0.0 {
-    scale = 1.0;
+    let pos = bevy_voxel_res.get_pos(*k) + pos_adj;
+    // let pos = bevy_voxel_res.get_pos(chunk.key);
+    commands
+      .spawn(MaterialMeshBundle {
+        mesh: mesh_handle,
+        material: materials.add(Color::rgb(c[0], c[1], c[2]).into()),
+        transform: Transform::from_translation(pos)
+          .with_scale(Vec3::new(scale, scale, scale)),
+        ..default()
+      })
+    .insert(MeshGraphics { lod: lod });
   }
-  println!("scale {}", scale);
+}
 
-  // let scale = 1.0;
 
-  let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
-  render_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.positions.clone());
-  render_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, data.normals.clone());
-  render_mesh.set_indices(Some(Indices::U32(data.indices.clone())));
+fn lod_chunks(
+  mut commands: Commands,
+  mut meshes: ResMut<Assets<Mesh>>,
+  mut materials: ResMut<Assets<StandardMaterial>>,
+  mut local_res: ResMut<LocalResource>,
+  bevy_voxel_res: ResMut<BevyVoxelResource>,
+) {
+  let pos_adj = Vec3::new(50.0, 0.0, 0.0);
 
-  let mesh_handle = meshes.add(render_mesh);
+  let depth = local_res.chunk_manager.depth as u8;
+  let key = [0, -1, 0];
+  let lod = 1;
+  
+  let keys = adjacent_keys(&key, 1, true);
+  for k in keys.iter() {
+    let chunk = local_res.chunk_manager.new_chunk3(k, depth, lod);
+    let data = chunk.octree.compute_mesh2(
+      VoxelMode::SurfaceNets, &local_res.chunk_manager, &local_res.colors,key, lod
+    );
+    let c = local_res.colors[lod];
+    let mut scale = data.lod as f32 * 2.0;
+    if scale == 0.0 {
+      scale = 1.0;
+    }
 
-  let pos = bevy_voxel_res.get_pos([1, -1, 0]);
-  // let pos = bevy_voxel_res.get_pos(chunk.key);
-  commands
-    .spawn(MaterialMeshBundle {
-      mesh: mesh_handle,
-      material: materials.add(Color::rgb(c[0], c[1], c[2]).into()),
-      transform: Transform::from_translation(pos)
-        .with_scale(Vec3::new(scale, scale, scale)),
-      ..default()
-    })
-  .insert(MeshGraphics { lod: lod });
+    let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
+    render_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.positions.clone());
+    render_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, data.normals.clone());
+    render_mesh.set_indices(Some(Indices::U32(data.indices.clone())));
+
+    let mesh_handle = meshes.add(render_mesh);
+
+    let pos = bevy_voxel_res.get_pos(*k) + pos_adj;
+    // let pos = bevy_voxel_res.get_pos(chunk.key);
+    commands
+      .spawn(MaterialMeshBundle {
+        mesh: mesh_handle,
+        material: materials.add(Color::rgb(c[0], c[1], c[2]).into()),
+        transform: Transform::from_translation(pos)
+          .with_scale(Vec3::new(scale, scale, scale)),
+        ..default()
+      })
+    .insert(MeshGraphics { lod: lod });
+  }
 }
 
 
