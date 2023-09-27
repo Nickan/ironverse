@@ -65,7 +65,7 @@ cfg_if! {
 cfg_if! {
   if #[cfg(feature = "tests")] {
     // mod tests;
-    use bevy_flycam::NoCameraPlayerPlugin;
+    // use bevy_flycam::NoCameraPlayerPlugin;
   }
 }
 

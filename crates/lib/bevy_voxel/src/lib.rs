@@ -20,6 +20,7 @@ impl Plugin for BevyVoxelPlugin {
     app
       .add_state::<EditState>()
       .add_state::<ShapeState>()
+      .insert_resource(BevyVoxelResource::default())
       .add_plugins(functions::CustomPlugin)
       .add_plugins(editstate::CustomPlugin)
       .add_plugins(lod::CustomPlugin);

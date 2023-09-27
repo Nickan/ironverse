@@ -3,6 +3,6 @@
 resolver = "2"
 members = [
   "crates/bin/*",
-  "crates/lib/*"
+  "crates/lib/*",
 ]
 default-members = ["crates/bin/editor"]

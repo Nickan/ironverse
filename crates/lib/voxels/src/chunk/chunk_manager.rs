@@ -195,7 +195,7 @@ impl ChunkManager {
     return keys;
   }
  */
-  pub fn set_voxel2(&mut self, pos: &[i64; 3], voxel: u8) -> Vec<([i64; 3], Chunk)> {
+  pub fn set_voxel(&mut self, pos: &[i64; 3], voxel: u8) -> Vec<([i64; 3], Chunk)> {
     let mut chunks = Vec::new();
     let chunk_size = self.chunk_size;
     let seamless_size = self.seamless_size();
@@ -476,7 +476,7 @@ mod tests {
         for z in start..end {
           new_value = if new_value == 255 { 0 } else { new_value + 1 };
           let pos = &[x, y, z];
-          chunk_manager.set_voxel1(pos, new_value);
+          chunk_manager.set_voxel(pos, new_value);
         }
       }
     }
@@ -524,12 +524,20 @@ mod tests {
 
     let keys = adjacent_keys(&[0, 0, 0], 5, true);
     for key in keys.iter() {
-      let chunk = chunk_manager.new_chunk3(key, chunk_manager.depth as u8);
+      // let chunk = chunk_manager.new_chunk(key, chunk_manager.depth as u8);
+      let chunk = ChunkManager::new_chunk(
+        key, 
+        chunk_manager.depth as u8, 
+        chunk_manager.depth as usize, 
+        chunk_manager.noise
+      );
       let d = chunk.octree.compute_mesh(
         VoxelMode::SurfaceNets, 
         &mut voxel_reuse,
         &color,
-        1.0
+        1.0,
+        *key,
+        0
       );
       if d.indices.len() != 0 {
         assert_eq!(chunk.mode, ChunkMode::Loaded, "key {:?}", key);

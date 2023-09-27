@@ -75,6 +75,22 @@ impl BevyVoxelResource {
       )
   }
 
+  pub fn compute_mesh2(&self, mode: VoxelMode, chunk: &Chunk) -> MeshData {
+    chunk
+      .octree
+      .compute_mesh2(
+        mode, 
+        &self.chunk_manager,
+        &mut VoxelReuse::new(self.chunk_manager.depth, 3),
+        &self.chunk_manager.colors,
+        self.chunk_manager.voxel_scale,
+        chunk.key,
+        chunk.lod
+      )
+  }
+
+
+
   /// Return a world position based on chunk size(depth) and voxel scale
   pub fn get_pos(&self, key: [i64; 3]) -> Vec3 {
     let seamless = self.chunk_manager.seamless_size();

@@ -1,5 +1,5 @@
 use parry3d::math::Point;
-use crate::utils::{coord_to_index, get_len_by_size};
+use crate::{utils::{coord_to_index, get_len_by_size}, chunk::chunk_manager::ChunkManager};
 use super::voxel_octree::*;
 use crate::data::CUBE_EDGES;
 
@@ -89,6 +89,7 @@ impl Layout {
   }
 }
 
+/// TODO: Deprecate
 pub fn get_surface_nets(
   octree: &VoxelOctree, 
   voxel_reuse: &mut VoxelReuse,
@@ -132,6 +133,54 @@ pub fn get_surface_nets(
 
   data
 }
+
+///
+pub fn get_surface_nets2(
+  octree: &VoxelOctree, 
+  chunk_manager: &ChunkManager,
+  voxel_reuse: &mut VoxelReuse,
+  colors: &Vec<[f32; 3]>,
+  scale: f32,
+  key: [i64; 3],
+  lod: usize,
+) -> MeshData {
+  let voxel_start = 0;
+  let voxel_end = octree.get_size();
+  for x in voxel_start..voxel_end {
+    for y in voxel_start..voxel_end {
+      for z in voxel_start..voxel_end {
+        let voxel = octree.get_voxel(x, y, z);
+
+        let index = coord_to_index(x, y, z, voxel_start, voxel_end);
+        voxel_reuse.voxels[index] = voxel;
+      }
+    }
+  }
+
+  let mut data = MeshData::default();
+  data.key = key;
+  data.lod = lod;
+
+  // Checking for each grid
+  let start = 0;
+  let end = octree.get_size() - 1;
+  let mut layout = Layout::new(end);
+
+  for x in start..end {
+    for y in start..end {
+      for z in start..end {
+        init_grid(&mut layout, voxel_reuse, x, y, z, scale);
+        detect_face_x(&mut data, &mut layout, voxel_reuse, x, y, z, colors);
+        detect_face_y(&mut data, &mut layout, voxel_reuse, x, y, z, colors);
+        detect_face_z(&mut data, &mut layout, voxel_reuse, x, y, z, colors);
+      }
+    }
+  }
+
+  data
+}
+
+
 
 
 fn init_grid(
@@ -750,7 +799,9 @@ mod tests {
       VoxelMode::SurfaceNets,
       &mut VoxelReuse::new(4, 3),
       &colors,
-      1.0
+      1.0,
+      [0, 0, 0],
+      0
     );
 
     /*Set the expected and actual result here
@@ -775,9 +826,7 @@ mod tests {
       }
 
       let pos = format!("{:.1}, {:.1}, {:.1}", value[0], value[1], value[2]);
-      println!("{} {:?} {:?}", pos, data.types_1[index], data.weights[index]);
-
-      
+      // println!("{} {:?} {:?}", pos, data.types_1[index], data.weights[index]);
     }
 
     // for p in data.indices.iter().enumerate() {
@@ -809,7 +858,6 @@ mod tests {
   fn test_one_voxel_mesh_data() -> Result<(), String> {
     let positions = load_vec3f32("assets/1_voxel_positions.data");
     let weights = load_vec4f32("assets/1_voxel_weights.data");
-    let types = load_vec4u32("assets/1_voxel_types.data");
 
     let mut octree = VoxelOctree::new_from_3d_array(
       0, 4,
@@ -831,7 +879,9 @@ mod tests {
       VoxelMode::SurfaceNets,
       &mut VoxelReuse::new(4, 3),
       &colors,
-      1.0
+      1.0,
+      [0, 0, 0],
+      0
     );
     for (index, value) in positions.iter().enumerate() {
       assert_eq!(value, &data.positions[index], "at index {}", index);
@@ -840,10 +890,6 @@ mod tests {
     for (index, value) in weights.iter().enumerate() {
       assert_eq!(value, &data.weights[index]);
     }
-
-    for (index, value) in types.iter().enumerate() {
-      assert_eq!(value, &data.types_1[index]);
-    }
     Ok(())
   }
 
@@ -851,7 +897,6 @@ mod tests {
   fn test_2_voxel_mesh_data() -> Result<(), String> {
     let positions = load_vec3f32("assets/2_voxel_positions.json");
     let weights = load_vec4f32("assets/2_voxel_weights.json");
-    let types = load_vec4u32("assets/2_voxel_types.json");
 
     let mut octree = VoxelOctree::new_from_3d_array(
       0, 4,
@@ -873,32 +918,18 @@ mod tests {
       VoxelMode::SurfaceNets,
       &mut VoxelReuse::new(4, 3),
       &colors,
-      1.0
+      1.0,
+      [0, 0, 0],
+      0
     );
     for (index, value) in positions.iter().enumerate() {
       assert_eq!(&data.positions[index], value, "at index {}", index);
     }
 
-    println!("data.types_1.len(): {:?}", data.types_1.len());
-    for (index, value) in types.iter().enumerate() {
-      // println!("index {:?}", value);
-
-      assert_eq!(&data.types_1[index], value, "Wrong texture indices at index {}", index);
-    }
-
-    for (index, value) in data.weights.iter().enumerate() {
-      println!("w {:?}", data.weights[index]);
-    }
-
     for (index, value) in weights.iter().enumerate() {
-      println!("weight {:?}", data.weights[index]);
-
+      // println!("weight {:?}", data.weights[index]);
       assert_eq!(&data.weights[index], value, "Wrong weights at index {}", index);
     }
-
-    
-
-
     
     Ok(())
   }

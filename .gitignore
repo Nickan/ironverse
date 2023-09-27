@@ -4,3 +4,4 @@ assets/wasm/
 .cargo/
 /.project
 assets/temp/
+crates/lib/bevy_flycam/.git

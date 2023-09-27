@@ -209,21 +209,22 @@ fn initial_grab_on_flycam_spawn(
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<InputState>()
+        app
+            .init_resource::<InputState>()
             .init_resource::<MovementSettings>()
             .init_resource::<KeyBindings>()
-            .add_system(setup_player.on_startup())
-            .add_system(initial_grab_cursor.on_startup())
-            .add_system(player_move)
-            .add_system(player_look)
-            .add_system(cursor_grab);
+            .add_systems(Startup, setup_player)
+            .add_systems(Startup, initial_grab_cursor)
+            .add_systems(Update, player_move)
+            .add_systems(Update, player_look)
+            .add_systems(Update, cursor_grab);
 
-        #[cfg(target_arch = "wasm32")]
-        app
-            .insert_resource(WasmResource::default())
-            .add_startup_system(startup)
-            .add_system(wasm_cursor_grab)
-            .add_system(player_look_wasm);
+        // #[cfg(target_arch = "wasm32")]
+        // app
+        //     .insert_resource(WasmResource::default())
+        //     .add_startup_system(startup)
+        //     .add_system(wasm_cursor_grab)
+        //     .add_system(player_look_wasm);
     }
 }
 
@@ -234,10 +235,11 @@ impl Plugin for NoCameraPlayerPlugin {
         app.init_resource::<InputState>()
             .init_resource::<MovementSettings>()
             .init_resource::<KeyBindings>()
-            .add_system(initial_grab_cursor.on_startup())
-            .add_system(initial_grab_on_flycam_spawn.on_startup())
-            .add_system(player_move)
-            .add_system(player_look);
+            .add_systems(Startup, initial_grab_cursor)
+            .add_systems(Startup, initial_grab_on_flycam_spawn)
+            .add_systems(Update, player_move)
+            .add_systems(Update, player_look)
+            .add_systems(Update, cursor_grab);
 
         #[cfg(target_arch = "wasm32")]
         app
