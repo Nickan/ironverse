@@ -81,9 +81,6 @@ impl BevyVoxelResource {
       .compute_mesh2(
         mode, 
         &self.chunk_manager,
-        &mut VoxelReuse::new(self.chunk_manager.depth, 3),
-        &self.chunk_manager.colors,
-        self.chunk_manager.voxel_scale,
         chunk.key,
         chunk.lod
       )
@@ -321,13 +318,13 @@ impl BevyVoxelResource {
       (pos.z * mul) as i64,
     ];
 
-    self.chunk_manager.set_voxel2(&p, voxel);
+    self.chunk_manager.set_voxel(&p, voxel);
   }
 
   pub fn set_voxel_default(
     &mut self, coord: [i64; 3], voxel: u8
   ) -> Vec<([i64; 3], Chunk)> {
-    self.chunk_manager.set_voxel2(&coord, voxel)
+    self.chunk_manager.set_voxel(&coord, voxel)
   }
 
   pub fn set_voxel_cube(

@@ -2,7 +2,7 @@ use bevy::{prelude::*, render::{render_resource::PrimitiveTopology, mesh::Indice
 use bevy_egui::{EguiContexts, egui::{Frame, Color32, Pos2, Rect, RichText, Style, Vec2}, EguiPlugin};
 use bevy_flycam::{FlyCam, NoCameraPlayerPlugin};
 use bevy_voxel::{BevyVoxelPlugin, BevyVoxelResource};
-use voxels::data::voxel_octree::VoxelMode;
+use voxels::{data::{voxel_octree::{VoxelMode, VoxelOctree}, surface_nets::VoxelReuse}, chunk::chunk_manager::{self, ChunkManager}};
 
 fn main() {
   App::new()
@@ -11,8 +11,9 @@ fn main() {
     .add_plugins(BevyVoxelPlugin)
     .add_plugin(EguiPlugin)
     .add_systems(Startup, setup)
-    .add_systems(Startup, old_mesh_system)
-    .add_systems(Startup, new_mesh_system)
+    // .add_systems(Startup, old_mesh_system)
+    // .add_systems(Startup, new_mesh_system)
+    .add_systems(Startup, custom_octree_test)
     .add_systems(Update, show_diagnostic_texts)
     .run();
 }
@@ -43,8 +44,8 @@ fn setup(
 
   commands
     .spawn(Camera3dBundle {
-      transform: Transform::from_xyz(-20.63, 58.30, -38.04)
-        .looking_to(Vec3::new(0.01, -0.80, 0.59), Vec3::Y),
+      transform: Transform::from_xyz(0.00, 4.36, -2.08)
+        .looking_to(Vec3::new(0.24, -0.70, 0.66), Vec3::Y),
       ..Default::default()
     })
     .insert(FlyCam);
@@ -124,6 +125,53 @@ fn new_mesh_system(
       // })
       ; 
   }
+}
+
+
+fn custom_octree_test(
+  mut commands: Commands,
+  mut meshes: ResMut<Assets<Mesh>>,
+  mut materials: ResMut<Assets<StandardMaterial>>,
+  mut bevy_voxel_res: ResMut<BevyVoxelResource>,
+) {
+  let depth = 3;
+
+  let mut octree = VoxelOctree::new(0, depth);
+  octree.set_voxel(1, 1, 1, 1);
+
+
+  let chunk_manager = ChunkManager::new_1(depth.into());
+
+  let data = octree.compute_mesh2(
+    VoxelMode::SurfaceNets, 
+    &chunk_manager, 
+    [0, 0, 0], 
+    0,
+  );
+
+  // let data = octree.compute_mesh(
+  //   VoxelMode::SurfaceNets, 
+  //   &mut VoxelReuse::new(depth.into(), 3),
+  //   &&chunk_manager.colors,
+  //   chunk_manager.voxel_scale, 
+  //   [0, 0, 0], 
+  //   0,
+  // );
+
+  println!("data.indices {}", data.indices.len());
+
+  let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
+  render_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.positions.clone());
+  render_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, data.normals.clone());
+  render_mesh.set_indices(Some(Indices::U32(data.indices.clone())));
+
+  commands
+    .spawn(MaterialMeshBundle {
+      mesh: meshes.add(render_mesh),
+      material: materials.add(Color::rgb(1.0, 0.0, 0.0).into()),
+      transform: Transform::from_translation(Vec3::ZERO),
+      ..default()
+    }); 
 }
 
 

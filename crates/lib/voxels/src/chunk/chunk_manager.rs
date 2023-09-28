@@ -1,4 +1,4 @@
-use crate::{data::voxel_octree::{VoxelOctree, ParentValueType}, utils::get_chunk_coords};
+use crate::{data::{voxel_octree::{VoxelOctree, ParentValueType}, surface_nets::VoxelReuse}, utils::get_chunk_coords};
 use super::*;
 use hashbrown::HashMap;
 use noise::*;
@@ -65,13 +65,15 @@ pub struct ChunkManager {
   pub voxel_scale: f32,
   pub range: u8,
   pub colors: Vec<[f32; 3]>,
+
+  pub voxel_reuse: VoxelReuse,
 }
 
 impl Default for ChunkManager {
   fn default() -> Self {
     let depth = 4;
-    // let loop_count = 3; // indices/axes being used, [x, y, z]
-    // let voxel_reuse = VoxelReuse::new(depth, loop_count);
+    let loop_count = 3; // indices/axes being used, [x, y, z]
+    let voxel_reuse = VoxelReuse::new(depth, loop_count);
     
     let noise = OpenSimplex::new().set_seed(1234);
     let offset = 2;
@@ -101,6 +103,8 @@ impl Default for ChunkManager {
         [0.0, 0.2, 0.0],
         [0.0, 0.4, 0.0],
       ],
+
+      voxel_reuse: voxel_reuse,
     }
   }
 }
@@ -128,8 +132,31 @@ impl ChunkManager {
       voxel_scale: voxel_scale,
       range: range,
       colors: colors,
+      voxel_reuse: VoxelReuse::new(depth, 3)
     }
   }
+
+  pub fn new_1(
+    depth: u32, 
+  ) -> Self {
+    let noise = OpenSimplex::new().set_seed(1234);
+    let offset = 2;
+    let chunk_size = 2_i32.pow(depth) as u32;
+
+    ChunkManager {
+      chunks: HashMap::new(),
+      depth: depth,
+      chunk_size: chunk_size,
+      offset: offset,
+      noise: noise,
+      height_scale: 16.0,
+      frequency: 0.0125,
+      voxel_reuse: VoxelReuse::new(depth, 3),
+      ..Default::default()
+    }
+  }
+
+
 /* 
   /* TODO: Remove later */
   pub fn set_voxel1(&mut self, pos: &[i64; 3], voxel: u8) -> Vec<[i64; 3]> {

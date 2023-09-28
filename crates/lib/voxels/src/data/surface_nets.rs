@@ -27,8 +27,8 @@ impl Default for GridPosition {
 }
 
 /** 
- * Fastest way(as far as I know) to get voxel value at the cost of using memory usage as it 
- * is putting everything in one-dimensinal array
+ * Refactor: Rename to VoxelDataUnpacker?
+ * Unpacking the VoxelOctree data into one-dimensional array for performance
  */
 #[derive(Clone)]
 pub struct VoxelReuse {
@@ -285,9 +285,13 @@ fn detect_face_x(
       0,-1,-1
     Determine where they are facing relative to voxel value/type
   */
+  if y == 0 || z == 0 {
+    return;
+  }
+
   let index = coord_to_index(x, y, z, 0, layout.size);
   let grid_000 = &layout.grids[index];
-  if grid_000.pos.is_none() || y == 0 || z == 0 {
+  if grid_000.pos.is_none() {
     return;
   }
   
@@ -313,7 +317,7 @@ fn detect_face_x(
   let face_left = voxel_reuse.voxels[index] > 0;
 
   let index = coord_to_index(x + 1, y, z, 0, voxel_reuse.size); // Left
-  let face_right = voxel_reuse.voxels[index] > 0; // (-1.0, 0.0, 0.0)
+  let face_right = voxel_reuse.voxels[index] > 0; // (1.0, 0.0, 0.0)
 
   let create = face_left ^ face_right;  // Only one should be true
   if create {
@@ -410,7 +414,7 @@ fn detect_face_y(
 
   let index0 = coord_to_index(x, y, z, 0, layout.size);
   let grid_000 = &layout.grids[index0];
-  if grid_000.pos.is_none() || y == 0 || z == 0 {
+  if grid_000.pos.is_none() {
     return;
   }
 
@@ -536,25 +540,25 @@ fn detect_face_z(
 
   let index = coord_to_index(x, y, z, 0, layout.size);
   let grid_000 = &layout.grids[index];
-  if grid_000.pos.is_none() || y == 0 || z == 0 {
+  if grid_000.pos.is_none() {
     return;
   }
 
   let index = coord_to_index(x - 1, y, z, 0, layout.size);
   let grid_100 = &layout.grids[index];
-  if grid_100.pos.is_none() || y == 0 || z == 0 {
+  if grid_100.pos.is_none() {
     return;
   }
 
   let index = coord_to_index(x, y - 1, z, 0, layout.size);
   let grid_010 = &layout.grids[index];
-  if grid_010.pos.is_none() || y == 0 || z == 0 {
+  if grid_010.pos.is_none() {
     return;
   }
 
   let index = coord_to_index(x - 1, y - 1, z, 0, layout.size);
   let grid_110 = &layout.grids[index];
-  if grid_110.pos.is_none() || y == 0 || z == 0 {
+  if grid_110.pos.is_none() {
     return;
   }
 
@@ -609,6 +613,8 @@ fn detect_face_z(
       data.colors.push(color_110);
     }
 
+
+    println!("face_back {}", face_back);
     let end_index = voxel_reuse.size - 1;
     if face_back && z != end_index {
       data.indices.push(data.positions.len() as u32);

@@ -15,7 +15,7 @@ pub fn set_voxel(
     (pos.z * mul) as i64,
   ];
 
-  chunk_manager.set_voxel2(&p, voxel);
+  chunk_manager.set_voxel(&p, voxel);
 }
 
 pub fn set_voxel_default(
@@ -24,7 +24,7 @@ pub fn set_voxel_default(
   voxel: u8,
 ) {
 
-  chunk_manager.set_voxel2(&coord, voxel);
+  chunk_manager.set_voxel(&coord, voxel);
 }
 
 

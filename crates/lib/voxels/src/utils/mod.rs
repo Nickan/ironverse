@@ -66,6 +66,15 @@ pub struct ChunkCoordinate {
 }
 
 pub fn coord_to_index(x: u32, y: u32, z: u32, start: u32, end: u32) -> usize {
+  if x < start || y < start || z < start {
+    panic!("Error x, y, z should not be lower than {}", start);
+  }
+
+  if x >= end || x >= end || z >= end {
+    panic!("Error x, y, z should not be equal and higher than {}", end);
+  }
+
+
   let diff = end - start;
 
   let start_x = x - start;
@@ -84,8 +93,6 @@ pub fn get_len_by_size(size: u32, loop_count: u32) -> usize {
   size.pow(loop_count) as usize
 }
 
-
-
 pub fn get_length(depth: u8) -> usize {
   let mut len = 0;
   for d in 1..depth {
@@ -93,9 +100,6 @@ pub fn get_length(depth: u8) -> usize {
   }
   len as usize
 }
-
-
-
 
 pub fn get_chunk_coords(
   pos: &[i64; 3], 
@@ -148,10 +152,6 @@ pub fn get_chunk_coords2(
 
   coords
 }
-
-
-
-
 
 pub fn potential_keys(pos: &[i64; 3], seamless_size: u32) -> Vec<[i64; 3]> {
   let mut keys = Vec::new();
@@ -307,13 +307,40 @@ pub struct OctreeCoord {
 mod tests {
   use super::*;
 
-  #[test]
-  fn test_coord_to_index1() -> Result<(), String> {
-    let default_value = 0;
-    let mut octree = VoxelOctree::new(default_value, 4);
+  // #[test]
+  // fn test_coord_to_index1() -> Result<(), String> {
+  //   let default_value = 0;
+  //   let mut octree = VoxelOctree::new(default_value, 4);
 
-    let start = 1;
-    let end = octree.get_size() - 2;
+  //   let start = 1;
+  //   let end = octree.get_size() - 2;
+
+  //   // println!("start: end: {} {}",start, end);
+  //   let mut index = 0;
+  //   for x in start..end {
+  //     for y in start..end {
+  //       for z in start..end {
+  //         // println!("right {} {} {} {}", x, y, z, index);
+  //         assert_eq!(
+  //           index,
+  //           coord_to_index(x, y, z, start, end),
+  //           "pos {} {} {}",
+  //           x,
+  //           y,
+  //           z
+  //         );
+  //         index += 1;
+  //       }
+  //     }
+  //   }
+
+  //   Ok(())
+  // }
+
+  #[test]
+  fn test_coord_to_index_0_to_16() -> Result<(), String> {
+    let start = 0;
+    let end = 16;
 
     // println!("start: end: {} {}",start, end);
     let mut index = 0;
@@ -334,8 +361,13 @@ mod tests {
       }
     }
 
+    let err = coord_to_index(16, 0, 0, start, end);
+
     Ok(())
   }
+
+
+
 
   #[test]
   fn test_coord_to_index2() -> Result<(), String> {
