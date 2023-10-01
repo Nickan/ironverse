@@ -87,7 +87,7 @@ impl BevyVoxelResource {
   }
 
 
-
+  /// Deprecate later, in favor of get_pos_2
   /// Return a world position based on chunk size(depth) and voxel scale
   pub fn get_pos(&self, key: [i64; 3]) -> Vec3 {
     let seamless = self.chunk_manager.seamless_size();
@@ -100,6 +100,19 @@ impl BevyVoxelResource {
     
     Vec3::new(pos[0], pos[1], pos[2])
   }
+
+  pub fn get_pos_2(&self, key: [i64; 3]) -> Vec3 {
+    let seamless = self.chunk_manager.chunk_size - 1;
+    let scale = self.chunk_manager.voxel_scale;
+    let mut pos = key_to_world_coord_f32(&key, seamless);
+
+    pos[0] *= scale;
+    pos[1] *= scale;
+    pos[2] *= scale;
+    
+    Vec3::new(pos[0], pos[1], pos[2])
+  }
+
 
   pub fn get_raycast_hit(&self, trans: &Transform) -> Option<Vec3> {
     let start_pos = trans.translation;

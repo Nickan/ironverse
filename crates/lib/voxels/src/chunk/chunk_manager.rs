@@ -156,72 +156,7 @@ impl ChunkManager {
     }
   }
 
-
-/* 
-  /* TODO: Remove later */
-  pub fn set_voxel1(&mut self, pos: &[i64; 3], voxel: u8) -> Vec<[i64; 3]> {
-    let mut keys = Vec::new();
-    let seamless_size = self.seamless_size();
-
-    let w_key = world_pos_to_key(pos, seamless_size);
-    // let w_key = voxel_pos_to_key(pos, seamless_size);
-    for x in -1..1 {
-      for y in -1..1 {
-        for z in -1..1 {
-          let key_x = w_key[0] + x;
-          let key_y = w_key[1] + y;
-          let key_z = w_key[2] + z;
-          let key = [key_x, key_y, key_z];
-
-          let chunk_sizei64 = (self.chunk_size - 1) as i64;
-          let size = seamless_size as i64;
-
-          let min_x = key_x * size;
-          let max_x = min_x + chunk_sizei64;
-          let min_y = key_y * size;
-          let max_y = min_y + chunk_sizei64;
-          let min_z = key_z * size;
-          let max_z = min_z + chunk_sizei64;
-          if pos[0] >= min_x
-            && pos[0] <= max_x
-            && pos[1] >= min_y
-            && pos[1] <= max_y
-            && pos[2] >= min_z
-            && pos[2] <= max_z
-          {
-            let local_x = (pos[0] - min_x) as u32;
-            let local_y = (pos[1] - min_y) as u32;
-            let local_z = (pos[2] - min_z) as u32;
-
-            if let Some(chunk) = self.get_chunk_mut(&key) {
-              chunk.octree.set_voxel(local_x, local_y, local_z, voxel);
-
-              //  FIXME: Check performance hit
-              chunk.mode = chunk_mode(&chunk.octree);
-
-              // if same_coord_i64(&[-1, 0, -1], &key) {
-              //   c.mode = chunk_mode(&c.octree);
-              // }
-              chunk.is_default = false;
-              keys.push(key);
-            } else {
-              let mut chunk = self.new_chunk3(&key, self.depth as u8);
-              chunk.octree.set_voxel(local_x, local_y, local_z, voxel);
-
-              //  FIXME: Check performance hit
-              chunk.mode = chunk_mode(&chunk.octree);
-
-              chunk.is_default = false;
-              self.set_chunk(&key, &chunk);
-              keys.push(key);
-            }
-          }
-        }
-      }
-    }
-    return keys;
-  }
- */
+  /// Deprecate in favor of set_voxel_2()
   pub fn set_voxel(&mut self, pos: &[i64; 3], voxel: u8) -> Vec<([i64; 3], Chunk)> {
     let mut chunks = Vec::new();
     let chunk_size = self.chunk_size;
@@ -233,7 +168,6 @@ impl ChunkManager {
       let local = &coord.local;
 
       // Refactor: Chunk already have keys, remove mapping here later
-
       if let Some(chunk) = self.get_chunk_mut(key) {
         chunk.octree.set_voxel(local[0], local[1], local[2], voxel);
         chunks.push((key.clone(), chunk.clone()));
@@ -249,7 +183,26 @@ impl ChunkManager {
     chunks
   }
 
+  pub fn set_voxel_2(&mut self, pos: &[i64; 3], voxel: u8) -> Chunk {
+    let key = voxel_pos_to_key(pos, self.chunk_size);
+    let mut chunk = match self.chunks.get(&key) {
+      Some(c) => c.clone(),
+      None => ChunkManager::new_chunk_1(&key, self.depth as u8, 0, self.noise)
+    };
+
+    let sizei64 = self.chunk_size as i64;
+    let local_x = (pos[0] - (key[0] * sizei64)) as u32;
+    let local_y = (pos[1] - (key[1] * sizei64)) as u32;
+    let local_z = (pos[2] - (key[2] * sizei64)) as u32;
+    
+    chunk.octree.set_voxel(local_x, local_y, local_z, voxel);
+    self.chunks.insert(key.clone(), chunk.clone());
+    chunk
+  }
+
+
   /**
+   * Deprecate in favor of get_voxel_2
     Returns 0 if the chunk is not loaded containing the coordinate
    */
   pub fn get_voxel(&self, pos: &[i64; 3]) -> u8 {
@@ -271,6 +224,21 @@ impl ChunkManager {
 
     octree.get_voxel(local_x as u32, local_y as u32, local_z as u32)
   }
+
+  pub fn get_voxel_2(&self, pos: &[i64; 3]) -> u8 {
+    let key = voxel_pos_to_key(pos, self.chunk_size);
+    let octree = match self.chunks.get(&key) {
+      Some(c) => &c.octree,
+      None => return 0
+    };
+
+    let sizei64 = self.chunk_size as i64;
+    let local_x = pos[0] - (key[0] * sizei64);
+    let local_y = pos[1] - (key[1] * sizei64);
+    let local_z = pos[2] - (key[2] * sizei64);
+    octree.get_voxel(local_x as u32, local_y as u32, local_z as u32)
+  }
+
 
   /**
    * Returns None if the chunk is not loaded containing the coordinate 
@@ -294,6 +262,7 @@ impl ChunkManager {
     Some(octree.get_voxel(local_x as u32, local_y as u32, local_z as u32))
   }
 
+  /// Deprecate in favor of get_octree_2
   fn get_octree(&self, pos: &[i64; 3]) -> Option<&VoxelOctree> {
     let seamless_size = self.seamless_size();
     let key = &voxel_pos_to_key(pos, seamless_size);
@@ -306,11 +275,24 @@ impl ChunkManager {
     Some(&chunk.octree)
   }
 
+  fn get_octree_2(&self, pos: &[i64; 3]) -> Option<&VoxelOctree> {
+    let key = &voxel_pos_to_key(pos, self.chunk_size);
+    let chunk = match self.get_chunk(key) {
+      Some(o) => o,
+      None => return None,
+    };
+    Some(&chunk.octree)
+  }
+
+
+
+
   pub fn seamless_size(&self) -> u32 {
     self.chunk_size - self.offset
   }
 
   /**
+   * Deprecate in favor of new_chunk_1()
     TODO: Deprecate later, in favor of using world coord instead of region coord
           We just have to do coord conversion when it is needed in the future
   */
@@ -355,8 +337,8 @@ impl ChunkManager {
           let mid_y = y as i64 - region_middle_pos;
 
           /* Uncomment this later, testing for now */
-          let voxel = if mid_y < elevation { 1 } else { 0 };
-          // let voxel = if mid_y < 0 { 1 } else { 0 };
+          // let voxel = if mid_y < elevation { 1 } else { 0 };
+          let voxel = if mid_y < 0 { 1 } else { 0 };
           data.push([octree_x, octree_y, octree_z, voxel]);
 
           /*
@@ -406,13 +388,208 @@ impl ChunkManager {
     chunk
   }
 
-  // pub fn new_chunk2(key: &[i64; 3], depth: u32, lod_level: u8, noise: OpenSimplex) -> Chunk {
-  //   ChunkManager::new_chunk(key, depth as u8, lod_level, noise)
-  // }
+  pub fn new_chunk_1(
+    key: &[i64; 3], depth: u8, lod: usize, noise: OpenSimplex
+  ) -> Chunk {
+    let size = 2_i32.pow(depth as u32) as u32;
 
-  // pub fn new_chunk3(&self, key: &[i64; 3], lod_level: u8) -> Chunk {
-  //   ChunkManager::new_chunk(key, self.depth as u8, lod_level, self.noise)
-  // }
+    let start_x = key[0] * size as i64;
+    let start_y = key[1] * size as i64;
+    let start_z = key[2] * size as i64;
+
+    let ground_level = 5;
+
+    let new_octree = VoxelOctree::new(0, depth);
+    let mut chunk = Chunk {
+      key: key.clone(),
+      lod: lod,
+      octree: new_octree,
+      mode: ChunkMode::None,
+      is_default: true,
+    };
+
+    let mut has_air = false;
+    let mut has_value = false;
+    let mut data = Vec::new();
+
+    let start = 0;
+    let end = size;
+    for octree_x in start..end {
+      for octree_y in start..end {
+        for octree_z in start..end {
+          let x = start_x + octree_x as i64;
+          let y = start_y + octree_y as i64;
+          let z = start_z + octree_z as i64;
+
+          let elevation = noise_elevation_2(x, z, ground_level, noise);
+          let mid_y = y as i64 - ground_level;
+
+          // let voxel = if y < ground_level { 1 } else { 0 };
+          // let voxel = if mid_y < elevation { 1 } else { 0 };
+          let voxel = if (octree_y as i64) < ground_level { 1 } else { 0 };
+
+          data.push([octree_x, octree_y, octree_z, voxel]); 
+
+          // if voxel > 0 {
+          //   println!("voxel {} {} {} {}", octree_x, octree_y, octree_z, voxel);
+          // }
+
+          /*
+            TODO:
+              Conditions to determine if Chunk is needed to be rendered and create collider
+                Mode:
+                  Empty/Air
+                  Inner
+                  Visible
+                Air
+                  If all values are 0
+                Inner
+                  If all values are 1
+                Visible
+                  ?
+          */
+          if octree_x <= end - 1
+            && octree_y <= end - 1
+            && octree_z <= end - 1
+          {
+            if voxel == 0 {
+              has_air = true;
+              // println!("Air {} {} {}", octree_x, octree_y, octree_z);
+            }
+            if voxel == 1 {
+              has_value = true;
+              // println!("Voxel {} {} {}", octree_x, octree_y, octree_z);
+            }
+          }
+        }
+      }
+    }
+
+    chunk.octree = VoxelOctree::new_from_3d_array(0, depth, &data, ParentValueType::Lod);
+    // chunk.mode = chunk_mode(&chunk.octree);
+
+    /*
+      TODO: Have to update mode detector
+    */
+    if (!has_air && has_value) || (has_air && !has_value) {
+      chunk.mode = ChunkMode::Air;  // Should be renamed as empty
+    }
+    if has_air && has_value {
+      chunk.mode = ChunkMode::Loaded;
+    }
+    // println!("{} {} {}", has_air, has_value, end - 2);
+    chunk
+  }
+
+  pub fn new_chunk_2<F>(
+    key: &[i64; 3], depth: u8, lod: usize, noise: OpenSimplex, f: F
+  ) -> Chunk 
+  where F: Fn(i64, i64, i64, i64, OpenSimplex) -> u8 {
+    let size = 2_i32.pow(depth as u32) as u32;
+
+    let start_x = key[0] * size as i64;
+    let start_y = key[1] * size as i64;
+    let start_z = key[2] * size as i64;
+
+    let ground_level = 5;
+
+    let new_octree = VoxelOctree::new(0, depth);
+    let mut chunk = Chunk {
+      key: key.clone(),
+      lod: lod,
+      octree: new_octree,
+      mode: ChunkMode::None,
+      is_default: true,
+    };
+
+    let mut has_air = false;
+    let mut has_value = false;
+    let mut data = Vec::new();
+
+    let start = 0;
+    let end = size;
+    for octree_x in start..end {
+      for octree_y in start..end {
+        for octree_z in start..end {
+          let x = start_x + octree_x as i64;
+          let y = start_y + octree_y as i64;
+          let z = start_z + octree_z as i64;
+
+          // let elevation = noise_elevation_2(x, z, ground_level, noise);
+          // let mid_y = y as i64 - ground_level;
+
+          // let voxel = if y < ground_level { 1 } else { 0 };
+          // let voxel = if mid_y < elevation { 1 } else { 0 };
+          let voxel = f(x, y, z, ground_level, noise) as u32;
+          // if voxel == 1 {
+          //   println!("voxel {}: {:?}: {} {} {}", voxel, key, x, y, z);
+          // }
+
+          data.push([octree_x, octree_y, octree_z, voxel]); 
+
+          // if voxel > 0 {
+          //   println!("voxel {} {} {} {}", octree_x, octree_y, octree_z, voxel);
+          // }
+
+          /*
+            TODO:
+              Conditions to determine if Chunk is needed to be rendered and create collider
+                Mode:
+                  Empty/Air
+                  Inner
+                  Visible
+                Air
+                  If all values are 0
+                Inner
+                  If all values are 1
+                Visible
+                  ?
+          */
+          if octree_x <= end - 1
+            && octree_y <= end - 1
+            && octree_z <= end - 1
+          {
+            if voxel == 0 {
+              has_air = true;
+              // println!("Air {} {} {}", octree_x, octree_y, octree_z);
+            }
+            if voxel == 1 {
+              has_value = true;
+              // println!("Voxel {} {} {}", octree_x, octree_y, octree_z);
+            }
+          }
+        }
+      }
+    }
+
+    chunk.octree = VoxelOctree::new_from_3d_array(0, depth, &data, ParentValueType::Lod);
+    // chunk.mode = chunk_mode(&chunk.octree);
+
+    /*
+      TODO: Have to update mode detector
+    */
+    if (!has_air && has_value) || (has_air && !has_value) {
+      chunk.mode = ChunkMode::Air;  // Should be renamed as empty
+    }
+    if has_air && has_value {
+      chunk.mode = ChunkMode::Loaded;
+    }
+    // println!("{} {} {}", has_air, has_value, end - 2);
+    chunk
+  }
+
+
+
+
+
+  pub fn new_chunk_mut(&mut self, key: &[i64; 3]) -> Chunk {
+    let c = ChunkManager::new_chunk_1(key, self.depth as u8, 0, self.noise);
+    self.chunks.insert(*key, c.clone());
+    c
+  }
+
+
+
 
   pub fn chunk_mode(self: &Self, key: &[i64; 3]) -> ChunkMode {
     let chunk = self.chunks.get(key);
@@ -482,12 +659,36 @@ impl ChunkManager {
     chunks
   }
 
+}
 
+pub fn voxel_by_noise(x: i64, y: i64, z: i64, middle: i64, noise: OpenSimplex) -> u8 {
+  let frequency = 0.0125;
+  let height_scale = 16.0;
+  let fx = (x - middle) as f64 * frequency;
+  let fz = (z - middle) as f64 * frequency;
+  let noise = noise.get([fx, fz]);
+  let elevation = (noise * height_scale) as i64;
+
+  let height = y + elevation;
+
+  // println!("elevation {} height {} middle {}", elevation, height, middle);
+  
+  // if height < middle {
+  //   // println!("height {} y {}", height, y);
+  //   return 1;
+  // }
+  // 0
+
+  if y < middle {
+    // println!("y {}", y);
+    return 1;
+  }
+  0
 }
 
 #[cfg(test)]
 mod tests {
-  use crate::{data::{surface_nets::{GridPosition, VoxelReuse}, voxel_octree::VoxelMode}, utils::get_length};
+  use crate::{data::{surface_nets::{GridPosition, VoxelReuse}, voxel_octree::VoxelMode}, utils::{get_length, coord_to_index}};
   use super::*;
 
   #[test]
@@ -524,6 +725,148 @@ mod tests {
 
     Ok(())
   }
+
+  #[test]
+  fn test_set_and_get_voxel_1() -> Result<(), String> {
+    let mut chunk_manager = ChunkManager::default();
+
+    let start = -32;
+    let end = 32;
+    let mut new_value = 0;
+    
+    for x in start..end {
+      for y in start..end {
+        for z in start..end {
+          new_value = if new_value == 255 { 0 } else { new_value + 1 };
+          let pos = &[x, y, z];
+          chunk_manager.set_voxel_2(pos, new_value);
+        }
+      }
+    }
+
+    new_value = 0;
+    for x in start..end {
+      for y in start..end {
+        for z in start..end {
+          new_value = if new_value == 255 { 0 } else { new_value + 1 };
+          let expected = new_value;
+          let pos = &[x, y, z];
+          let result = chunk_manager.get_voxel_2(pos);
+
+          assert_eq!(result, expected, "at pos: {:?}", (x, y, z));
+        }
+      }
+    }
+
+    Ok(())
+  }
+
+  #[test]
+  fn test_set_and_get_voxel_2() -> Result<(), String> {
+    let mut chunk_manager = ChunkManager::default();
+
+    // let keys = vec![
+    //   [0, -1, 0],
+    //   [0, 0, 0]
+    // ];
+
+    let keys = adjacent_keys(&[0, 0, 0], 1, true);
+
+    for key in keys.iter() {
+      let chunk_1 = chunk_manager.new_chunk_mut(key);
+      let chunk_2 = ChunkManager::new_chunk_1(
+        key, chunk_manager.depth as u8, 0, chunk_manager.noise
+      );
+
+      let len = chunk_1.octree.size;
+      for x in 0..len {
+        for y in 0..len {
+          for z in 0..len {
+            let voxel_1 = chunk_1.octree.get_voxel(x, y, z);
+            let voxel_2 = chunk_2.octree.get_voxel(x, y, z);
+
+            let w_x = key[0] * len as i64 + x as i64;
+            let w_y = key[1] * len as i64 + y as i64;
+            let w_z = key[2] * len as i64 + z as i64;
+            let voxel_3 = chunk_manager.get_voxel_2(&[w_x, w_y ,w_z]);
+
+            assert_eq!(voxel_1, voxel_2, "Not equal");
+            assert_eq!(voxel_1, voxel_3, "Not equal");
+          }
+        }
+      }
+    }
+
+    Ok(())
+  }
+
+  #[test]
+  fn test_set_and_get_voxel_3() -> Result<(), String> {
+    let mut chunk_manager = ChunkManager::default();
+
+    // let keys = vec![
+    //   [0, -1, 0],
+    //   [0, 0, 0]
+    // ];
+
+    // let keys = adjacent_keys(&[0, 0, 0], 1, true);
+    let keys = vec![[0, 0, 0]];
+
+    for key in keys.iter() {
+      let chunk_1 = ChunkManager::new_chunk_2(
+        key, chunk_manager.depth as u8, 0, chunk_manager.noise, voxel_by_noise
+      );
+
+      let size = chunk_1.octree.size;
+      let mut voxel_reuse = VoxelReuse::new_1(size);
+
+      let data = chunk_1.octree.compute_mesh2(VoxelMode::SurfaceNets, &chunk_manager, *key, 0);
+      println!("data.len() {}", data.indices.len());
+
+
+      let start_x = key[0] * chunk_1.octree.size as i64;
+      let start_y = key[1] * chunk_1.octree.size as i64;
+      let start_z = key[2] * chunk_1.octree.size as i64;
+
+      let len = chunk_1.octree.size;
+      let ground = 5;
+      for x in 0..len {
+        for y in 0..len {
+          for z in 0..len {
+            let voxel_1 = chunk_1.octree.get_voxel(x, y, z);
+
+            let w_x = x as i64 + start_x;
+            let w_y = y as i64 + start_y;
+            let w_z = z as i64 + start_z;
+
+            let voxel_2 = voxel_by_noise(w_x, w_y, w_z, ground, chunk_manager.noise);
+            assert_eq!(voxel_1, voxel_2);
+
+            let index = coord_to_index(x, y, z, 0, size);
+            let voxel_3 = voxel_reuse.voxels[index];
+
+            assert_eq!(voxel_3, voxel_1);
+
+            // if voxel_1 == 0 {
+              // println!("voxel {}", voxel_1);
+            // }
+
+
+            // let w_x = key[0] * len as i64 + x as i64;
+            // let w_y = key[1] * len as i64 + y as i64;
+            // let w_z = key[2] * len as i64 + z as i64;
+            // let voxel_2 = chunk_manager.get_voxel_2(&[w_x, w_y ,w_z]);
+
+            // assert_eq!(voxel_1, voxel_2, "Not equal");
+          }
+        }
+      }
+    }
+
+    Ok(())
+  }
+
+
 
   #[test]
   fn test_chunk_mode() -> Result<(), String> {
@@ -580,6 +923,8 @@ mod tests {
 
     Ok(())
   }
+
+
 }
 
 

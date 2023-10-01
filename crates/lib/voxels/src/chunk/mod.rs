@@ -695,6 +695,16 @@ fn noise_elevation(x: &u32, z: &u32, middle: &i64, noise: OpenSimplex) -> i64 {
   elevation
 }
 
+fn noise_elevation_2(x: i64, z: i64, middle: i64, noise: OpenSimplex) -> i64 {
+  let frequency = 0.0125;
+  let height_scale = 16.0;
+  let fx = (x - middle) as f64 * frequency;
+  let fz = (z - middle) as f64 * frequency;
+  let noise = noise.get([fx, fz]);
+  let elevation = (noise * height_scale) as i64;
+  elevation
+}
+
 pub fn get_dist(pos1: &[i64; 3], pos2: &[i64; 3]) -> f32 {
   let mut dist_sqr = 0;
   for (index, val) in pos1.iter().enumerate() {
@@ -1107,8 +1117,6 @@ mod tests {
     Ok(())
   }
 
-
-
   #[test]
   fn test_adjacent_keys_by_scale_0_2_key_negative_10() -> Result<(), String> {
     let key = [-10, -10, -10];
@@ -1137,7 +1145,16 @@ mod tests {
     Ok(())
   }
 
-  
+  #[test]
+  fn test_noise_elevation() -> Result<(), String> {
+    let chunk_manager = ChunkManager::default();
+
+    let noise = noise_elevation(&0, &0, &0, chunk_manager.noise);
+
+    println!("noise {}", noise);
+    Ok(())
+  }
+
 
 }
 

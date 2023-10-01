@@ -52,6 +52,24 @@ impl VoxelReuse {
       size: size,
     }
   }
+
+  pub fn new_1(size: u32) -> Self {
+    let axis = 3;
+    let len = get_len_by_size(size, axis);
+    let voxels = vec![0; len];
+    let grid_pos_len = get_len_by_size(size - 1, axis);
+    let grid_pos = vec![GridPosition::default(); grid_pos_len];
+
+    println!("VoxelReuse size {} len {} grid_pos_len {}", size, len, grid_pos_len);
+
+    VoxelReuse {
+      voxels: voxels,
+      grid_pos: grid_pos,
+      size: size,
+    }
+  }
+
+
 }
 
 impl Default for VoxelReuse {
@@ -82,6 +100,8 @@ impl Layout {
     for _ in 0..len {
       grids.push(Grid::default());
     }
+
+    // println!("Layout size {} len {}", size, len);
     Self {
       grids: grids,
       size: size,
@@ -138,21 +158,45 @@ pub fn get_surface_nets(
 pub fn get_surface_nets2(
   octree: &VoxelOctree, 
   chunk_manager: &ChunkManager,
-  voxel_reuse: &mut VoxelReuse,
+  voxel_reuse: &mut VoxelReuse, // Change this param implementation later
   colors: &Vec<[f32; 3]>,
   scale: f32,
   key: [i64; 3],
   lod: usize,
 ) -> MeshData {
+  let size = octree.get_size();
   let voxel_start = 0;
-  let voxel_end = octree.get_size();
+  let voxel_end = octree.get_size() + 0;
+
+  // println!("voxel_end {}", voxel_end);
+
+  let mut voxel_reuse_1 = VoxelReuse::new_1(voxel_end);
+
+
+  let start_x = key[0] * size as i64;
+  let start_y = key[1] * size as i64;
+  let start_z = key[2] * size as i64;
+
   for x in voxel_start..voxel_end {
     for y in voxel_start..voxel_end {
       for z in voxel_start..voxel_end {
-        let voxel = octree.get_voxel(x, y, z);
+        // let voxel = octree.get_voxel(x, y, z);
+        let world_x = start_x + x as i64;
+        let world_y = start_y + y as i64;
+        let world_z = start_z + z as i64;
+
+        let voxel = chunk_manager.get_voxel_2(&[world_x, world_y, world_z]);
+        // let voxel = octree.get_voxel(x, y, z);
+        // if voxel != voxel1 {
+        //   println!("not equal {} {} {} {}", x, y, z, voxel1);
+        // }
 
         let index = coord_to_index(x, y, z, voxel_start, voxel_end);
-        voxel_reuse.voxels[index] = voxel;
+        voxel_reuse_1.voxels[index] = voxel;
+
+        if voxel > 0 && x > 15 {
+          println!("voxel at {} {} {}", x, y, z);
+        }
       }
     }
   }
@@ -163,16 +207,17 @@ pub fn get_surface_nets2(
 
   // Checking for each grid
   let start = 0;
-  let end = octree.get_size() - 1;
+  let end = voxel_end - 1;
+  // let end = 20;
   let mut layout = Layout::new(end);
 
   for x in start..end {
     for y in start..end {
       for z in start..end {
-        init_grid(&mut layout, voxel_reuse, x, y, z, scale);
-        detect_face_x(&mut data, &mut layout, voxel_reuse, x, y, z, colors);
-        detect_face_y(&mut data, &mut layout, voxel_reuse, x, y, z, colors);
-        detect_face_z(&mut data, &mut layout, voxel_reuse, x, y, z, colors);
+        init_grid(&mut layout, &voxel_reuse_1, x, y, z, scale);
+        // detect_face_x(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, colors);
+        detect_face_y(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, colors);
+        // detect_face_z(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, colors);
       }
     }
   }
@@ -180,12 +225,9 @@ pub fn get_surface_nets2(
   data
 }
 
-
-
-
 fn init_grid(
   layout: &mut Layout, 
-  voxel_reuse: &mut VoxelReuse, 
+  voxel_reuse: &VoxelReuse, 
   x: u32, 
   y: u32, 
   z: u32,
@@ -194,7 +236,6 @@ fn init_grid(
   let mut voxel_count = 0;
   let mut dists = [1.0; 8];
 
-  // let mut voxels = [0; 4];
   let mut voxels = [0; 8];
   let mut voxel_index = 0;
   for x_offset in 0..2 {
@@ -208,6 +249,11 @@ fn init_grid(
         if index >= voxel_reuse.voxels.len() {
           continue;
         }
+
+        // if x > 15 {
+        //   println!("x {}", x);
+        // }
+
         let voxel = voxel_reuse.voxels[index];
         if voxel > 0 {
           let x_index = x_offset;
@@ -251,8 +297,7 @@ fn init_grid(
     layout.grids[grid_index].types = voxels;
     layout.grids[grid_index].voxel_count = voxel_index as u8;
 
-    // Defer: Study how this works
-      let normal_x = (dists[0b001] + dists[0b011] + dists[0b101] + dists[0b111])
+    let normal_x = (dists[0b001] + dists[0b011] + dists[0b101] + dists[0b111])
       - (dists[0b000] + dists[0b010] + dists[0b100] + dists[0b110]);
     let normal_y = (dists[0b010] + dists[0b011] + dists[0b110] + dists[0b111])
       - (dists[0b000] + dists[0b001] + dists[0b100] + dists[0b101]);
@@ -442,6 +487,8 @@ fn detect_face_y(
   let index = coord_to_index(x, y + 1, z, 0, voxel_reuse.size); // Grid voxel on top
   let face_down = voxel_reuse.voxels[index] > 0;
 
+  // println!("{} {} {}", face_up, face_down, y);
+
   let create = face_up ^ face_down;
   if create {
     let voxels = get_vertices_voxels(
@@ -455,7 +502,6 @@ fn detect_face_y(
 
     let start = 0;
     if face_up && y != start {
-
       data.indices.push(data.positions.len() as u32);
       data.positions.push(grid_000.pos.unwrap());
       data.normals.push(grid_000.normal);
@@ -486,7 +532,6 @@ fn detect_face_y(
       data.positions.push(grid_101.pos.unwrap());
       data.normals.push(grid_101.normal);
       data.colors.push(color_101);
-
     }
 
     let end_index = voxel_reuse.size - 1;
@@ -613,8 +658,6 @@ fn detect_face_z(
       data.colors.push(color_110);
     }
 
-
-    println!("face_back {}", face_back);
     let end_index = voxel_reuse.size - 1;
     if face_back && z != end_index {
       data.indices.push(data.positions.len() as u32);
@@ -939,6 +982,10 @@ mod tests {
     
     Ok(())
   }
+
+
+
+  
 
 
 
