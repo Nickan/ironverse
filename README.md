@@ -1,15 +1,19 @@
-Installation
+## Setup
+Install rust-lang: https://www.rust-lang.org/
+Install cargo plugins:
+```
+cargo install wasm-pack
+cargo install wasm-bindgen-cli
+cargo install cargo-make
+```
 
-```
-git clone https://github.com/chaoticgood1/ironverse.git
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-cargo run
-```
+## Build and Run
 
-Controls
+### Desktop
 ```
-Press Up to switch between Cube and Sphere
-Press Down to select edit modes
-Press - for making the edit size smaller
-Press + for making the edit size bigger
+cargo run --release
+```
+### Web
+```
+cargo make web
 ```

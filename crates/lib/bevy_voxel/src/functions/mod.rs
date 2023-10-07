@@ -1,25 +1,17 @@
 mod sphere;
 mod cube;
 
-
-use bevy::{prelude::*, utils::HashMap};
+use bevy::prelude::*;
 use rapier3d::prelude::ColliderHandle;
-use utils::Utils;
-use voxels::data::voxel_octree::MeshData;
-use crate::{BevyVoxelResource, Selected, Preview, Chunks, Center, ChunkData, ShapeState, EditState, MeshComponent};
+use crate::{BevyVoxelResource, Selected, Preview, Chunks, Center, ShapeState, EditState, MeshComponent};
 
 use cfg_if::cfg_if;
+
 cfg_if! {
-  if #[cfg(target_arch = "wasm32")] {
-    use multithread::plugin::PluginResource;
+  if #[cfg(not(target_arch = "wasm32"))] {
+    mod async_loading;
   }
 }
-
-// cfg_if! {
-//   if #[cfg(not(target_arch = "wasm32"))] {
-    mod async_loading;
-//   }
-// }
 
 
 pub struct CustomPlugin;
@@ -32,22 +24,26 @@ impl Plugin for CustomPlugin {
       .add_systems(Startup, startup)
       .add_systems(Update, update)
       .add_systems(Update, detect_selected_voxel_position)
-      .add_systems(Update, load_main_chunks)
-      .add_systems(Update, load_main_delta_chunks)
-      .add_systems(Update, load_lod_chunks)
-      .add_systems(Update, load_lod_center_changed)
       .add_systems(Update, receive_chunks)
       .add_systems(Update, receive_mesh)
-      .add_systems(Update, shape_state_changed);
+      .add_systems(Update, shape_state_changed)
+      .add_systems(Update, (
+        load_main_octrees,
+        load_main_delta_octrees,
+        load_lod_chunks,
+        load_lod_delta_octrees
+      ));
 
-    // cfg_if! {
-    //   if #[cfg(not(target_arch = "wasm32"))] {
+    cfg_if! {
+      if #[cfg(not(target_arch = "wasm32"))] {
         app
           .add_plugins(async_loading::CustomPlugin);
-    //   }
-    // }
+      }
+    }
   }
 }
+
+
 
 fn startup() {
   println!("startup BevyVoxel");
@@ -97,7 +93,7 @@ fn detect_selected_voxel_position(
   }
 }
 
-fn load_main_chunks(
+fn load_main_octrees(
   mut res: ResMut<BevyVoxelResource>,
   mut chunks: Query<(&Center, &mut Chunks, &mut MeshComponent), Added<Chunks>>
 ) {
@@ -122,9 +118,9 @@ fn load_main_chunks(
 
 fn load_lod_chunks(
   mut res: ResMut<BevyVoxelResource>,
-  mut chunks: Query<(&Center, &mut Chunks, &mut MeshComponent), Added<Chunks>>
+  chunks: Query<&Center, Added<Chunks>>
 ) {
-  for (center, mut chunks, mut mesh_comp) in &mut chunks {
+  for center in &chunks {
     for lod in 1..res.ranges.len() - 1 {
       let keys = res.get_keys_by_lod(center.key, lod);
       request_load_chunk(&keys, &mut res, lod);
@@ -132,7 +128,7 @@ fn load_lod_chunks(
   }
 }
 
-fn load_main_delta_chunks(
+fn load_main_delta_octrees(
   mut res: ResMut<BevyVoxelResource>,
   mut centers: Query<(&Center, &mut Chunks, &mut MeshComponent), Changed<Center>>
 ) {
@@ -158,12 +154,12 @@ fn load_main_delta_chunks(
   }
 }
 
-fn load_lod_center_changed(
-  mut res: ResMut<BevyVoxelResource>,
-  mut centers: Query<(&Center, &mut Chunks, &mut MeshComponent), Changed<Center>>
+fn load_lod_delta_octrees(
+  res: Res<BevyVoxelResource>,
+  centers: Query<(&Center, &Chunks), Changed<Center>>
 ) {
   
-  for (center, mut chunks, mut mesh_comp) in &mut centers {
+  for (center, chunks) in &centers {
     for lod in 1..res.ranges.len() - 1 {
       let keys = res.get_delta_keys_by_lod(
         &center.prev_key, &center.key, lod
@@ -177,16 +173,12 @@ fn load_lod_center_changed(
         if d.is_some() {
           let mut data = d.unwrap().clone();
           data.lod = lod;
-          res.send_process_mesh.send(data);
+          let _ = res.send_process_mesh.send(data);
         }
       }
     }
   }
 }
-
-
-
-
 
 fn shape_state_changed(
   shape_state: Res<State<ShapeState>>,
@@ -212,8 +204,6 @@ fn shape_state_changed(
   
 }
 
-
-
 fn request_load_chunk(
   keys: &Vec<[i64; 3]>,
   bevy_voxel_res: &mut BevyVoxelResource,
@@ -225,31 +215,19 @@ fn request_load_chunk(
 }
 
 fn receive_chunks(
-  mut res: ResMut<BevyVoxelResource>,
-  mut queries: Query<(&Center, &mut Chunks, &mut MeshComponent)>
+  res: Res<BevyVoxelResource>,
 ) {
   for c in res.recv_chunk.drain() {
-    for (center, mut chunks, mut mesh_comp) in &mut queries {
-      res.send_process_mesh.send(c.clone());
-
-      // let mut chunk = c.clone();
-      // chunk.lod = 0;
-      // chunks.data.insert(c.key, chunk);
-    }
+    let _ = res.send_process_mesh.send(c.clone());
   }
 }
 
 fn receive_mesh(
-  mut res: ResMut<BevyVoxelResource>,
-  mut queries: Query<(&Center, &mut Chunks, &mut MeshComponent)>
+  res: Res<BevyVoxelResource>,
+  mut queries: Query<(&Center, &mut MeshComponent)>
 ) {
-  let max_lod = res.chunk_manager.depth as u8;
-  let ranges = res.ranges.clone();
   for data in res.recv_mesh.drain() {
-    for (center, mut chunks, mut mesh_comp) in &mut queries {
-      let d = data.clone();
-      // mesh_comp.data.insert(d.key, d);
-
+    for (center, mut mesh_comp) in &mut queries {
       if res.in_range_by_lod(&center.key, &data.key, data.lod) {
         if data.lod == 0 {
           // println!("Error: Lod 0 should not be loaded async");
@@ -262,20 +240,4 @@ fn receive_mesh(
     }
   }
 }
-
-
-
-fn get_keys_without_data(
-  keys: &Vec<[i64; 3]>,
-  data: &HashMap<[i64; 3], MeshData>
-) -> Vec<[i64; 3]> {
-  let mut filtered_keys = Vec::new();
-  for k in keys.iter() {
-    if !data.contains_key(k) {
-      filtered_keys.push(*k);
-    }
-  }
-  filtered_keys
-}
-
 

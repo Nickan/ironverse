@@ -2,8 +2,9 @@ mod physics;
 mod util;
 mod functions;
 mod implement;
-mod editstate;
+pub mod editstate;
 mod lod;
+
 
 use bevy::{prelude::*, utils::HashMap};
 use flume::{Sender, Receiver};
@@ -12,6 +13,12 @@ use rapier3d::prelude::ColliderHandle;
 use voxels::{chunk::chunk_manager::{ChunkManager, Chunk}, data::voxel_octree::MeshData};
 
 use cfg_if::cfg_if;
+
+cfg_if! {
+  if #[cfg(target_arch = "wasm32")] {
+    mod wasm;
+  }
+}
 
 
 pub struct BevyVoxelPlugin;
@@ -28,7 +35,10 @@ impl Plugin for BevyVoxelPlugin {
     cfg_if! {
       if #[cfg(target_arch = "wasm32")] {
         app
-          .add_plugin(multithread::plugin::CustomPlugin);
+          .add_plugins((
+            multithread::plugin::CustomPlugin,
+            wasm::CustomPlugin
+          ));
       }
     }
   }
