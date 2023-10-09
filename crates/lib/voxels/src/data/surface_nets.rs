@@ -167,19 +167,13 @@ pub fn get_surface_nets2(
 ) -> MeshData {
   let size = octree.get_size();
   let voxel_start = 0;
-  // let voxel_end = octree.get_size() + 1;
-  let voxel_end = 24;
-
-  println!("voxel_end {}", voxel_end);
-
+  let voxel_end = octree.get_size() + 2;
   let mut voxel_reuse_1 = VoxelReuse::new_1(voxel_end);
 
 
   let start_x = key[0] * size as i64;
   let start_y = key[1] * size as i64;
   let start_z = key[2] * size as i64;
-
-  println!("start_z {}", start_z);
 
   for x in voxel_start..voxel_end {
     for y in voxel_start..voxel_end {
@@ -190,17 +184,9 @@ pub fn get_surface_nets2(
         let world_z = start_z + z as i64;
 
         let voxel = chunk_manager.get_voxel_2(&[world_x, world_y, world_z]);
-        // let voxel = octree.get_voxel(x, y, z);
-        // if voxel != voxel1 {
-        //   println!("not equal {} {} {} {}", x, y, z, voxel1);
-        // }
 
         let index = coord_to_index(x, y, z, voxel_start, voxel_end);
         voxel_reuse_1.voxels[index] = voxel;
-
-        if voxel > 0 && x > 15 {
-          // println!("voxel at {} {} {}", x, y, z);
-        }
       }
     }
   }
@@ -212,16 +198,15 @@ pub fn get_surface_nets2(
   // Checking for each grid
   let start = 0;
   let end = voxel_end - 1;
-  // let end = 20;
   let mut layout = Layout::new(end);
 
   for x in start..end {
     for y in start..end {
       for z in start..end {
         init_grid(&mut layout, &voxel_reuse_1, x, y, z, scale);
-        // detect_face_x(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, colors);
+        detect_face_x(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, colors);
         detect_face_y(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, colors);
-        // detect_face_z(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, colors);
+        detect_face_z(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, colors);
       }
     }
   }
@@ -279,6 +264,14 @@ fn init_grid(
     }
   }
 
+  // let limit = 15;
+  // let ground = 5;
+  // if z > limit && y < ground {
+  //   println!("Error 0 {}", voxel_count);
+  // }
+
+
+
   let grid_index = coord_to_index(x, y, z, 0, layout.size);
   if voxel_count > 0 && voxel_count < 8 {
     let mut count = 0;
@@ -310,8 +303,16 @@ fn init_grid(
 
     layout.grids[grid_index].pos = avg_pos;
     layout.grids[grid_index].normal = [normal_x, normal_y, normal_z];
+
+
+    // let limit = 15;
+    // if z > limit {
+    //   println!("Error 1");
+    // }
   }
 
+
+  
   
 }
 
@@ -461,6 +462,11 @@ fn detect_face_y(
     return;
   }
 
+  // let limit = 15;
+  // if z > limit {
+  //   println!("Error 1");
+  // }
+
   let index0 = coord_to_index(x, y, z, 0, layout.size);
   let grid_000 = &layout.grids[index0];
   if grid_000.pos.is_none() {
@@ -492,6 +498,12 @@ fn detect_face_y(
   let face_down = voxel_reuse.voxels[index] > 0;
 
   // println!("{} {} {}", face_up, face_down, y);
+
+  // let limit = 15;
+  // if z > limit {
+  //   println!("Error 2");
+  // }
+
 
   let create = face_up ^ face_down;
   if create {
@@ -1028,9 +1040,9 @@ mod tests {
   fn test_voxel_reuse_against_chunk_manager() -> Result<(), String> {
     let mut chunk_manager = ChunkManager::default();
 
-    let mut octree = VoxelOctree::new(0, 4);
+    let octree = VoxelOctree::new(0, 4);
     let voxel_start = 0;
-    let voxel_end = octree.get_size() + 2;
+    let voxel_end = octree.get_size() + 16;
 
     let mut voxel_reuse = VoxelReuse::new_1(voxel_end);
 
@@ -1050,11 +1062,18 @@ mod tests {
       }
     }
 
+    new_value = 0;
     for x in voxel_start..voxel_end {
       for y in voxel_start..voxel_end {
         for z in voxel_start..voxel_end {
+
+          new_value = if new_value == 255 { 0 } else { new_value + 1 };
+
+
           let voxel = chunk_manager.get_voxel_2(&[x.into(), y.into(), z.into()]);
           let index = coord_to_index(x, y, z, voxel_start, voxel_end);
+
+          assert_eq!(voxel, new_value);
           assert_eq!(voxel_reuse.voxels[index], voxel);
         }
       }

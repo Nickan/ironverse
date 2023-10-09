@@ -550,11 +550,7 @@ impl ChunkManager {
           let y = start_y + octree_y as i64;
           let z = start_z + octree_z as i64;
 
-          // let elevation = noise_elevation_2(x, z, ground_level, noise);
-          // let mid_y = y as i64 - ground_level;
-
           // let voxel = if y < ground_level { 1 } else { 0 };
-          // let voxel = if mid_y < elevation { 1 } else { 0 };
           let voxel = f(x, y, z, ground_level, noise) as u32;
           // if voxel == 1 {
           //   println!("voxel {}: {:?}: {} {} {}", voxel, key, x, y, z);
@@ -714,8 +710,8 @@ pub fn voxel_by_noise(x: i64, y: i64, z: i64, middle: i64, noise: OpenSimplex) -
   // }
   // 0
 
-  // if height < middle {
-  if y < middle {
+  if height < middle {
+  // if y < middle {
     // println!("y {}", y);
     return 1;
   }
@@ -901,6 +897,43 @@ mod tests {
 
     Ok(())
   }
+
+  #[test]
+  fn test_set_and_get_voxel_in_chunk_manager_custom_algorithm() -> Result<(), String> {
+    let ground = 5;
+    
+    let mut chunk_manager = ChunkManager::default();
+    let keys = vec![[0, 0, 0], [0, 0, 1]];
+    for key in keys.iter() {
+
+      let chunk = ChunkManager::new_chunk_2(
+        key, chunk_manager.depth as u8, 0, chunk_manager.noise,
+        |x: i64, y: i64, z: i64, middle: i64, noise: OpenSimplex | {
+          if y < ground { 1 } else { 0 }
+        }
+      );
+      chunk_manager.set_chunk(key, &chunk);
+    }
+
+
+    let default_len = chunk_manager.chunk_size as i64;
+    let len = 20;
+    let ground = 5;
+    for x in 0..default_len {
+      for y in 0..default_len {
+        for z in 0..len {
+          let voxel = chunk_manager.get_voxel_2(&[x, y, z]);
+
+          if y < ground {
+            assert_eq!(voxel, 1, "at {} {} {}", x, y, z);
+          }
+        }
+      }
+    }
+
+    Ok(())
+  }
+
 
 
 

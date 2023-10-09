@@ -103,7 +103,7 @@ impl BevyVoxelResource {
   }
 
   pub fn get_pos_2(&self, key: [i64; 3]) -> Vec3 {
-    let seamless = self.chunk_manager.chunk_size - 1;
+    let seamless = self.chunk_manager.chunk_size;
     let scale = self.chunk_manager.voxel_scale;
     let mut pos = key_to_world_coord_f32(&key, seamless);
 

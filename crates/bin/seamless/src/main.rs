@@ -313,27 +313,33 @@ fn generate_mesh_2(
   //   });
 
 
-
-  let keys = vec![[0, 0, 0], [0, 0, 1]];
+  let k = [0, 0, 0];
+  // let keys = vec![[0, 0, 0], [0, 0, 1]];
+  let keys = adjacent_keys(&k, 1, true);
   for key in keys.iter() {
-
-    if ![[0, -1, 0]].contains(key) {
-      // continue;
-    }
-
-    // let chunk = chunk_manager.new_chunk_mut(key);
     let chunk = ChunkManager::new_chunk_2(
       key, chunk_manager.depth as u8, 0, chunk_manager.noise, voxel_by_noise
     );
     chunk_manager.set_chunk(key, &chunk);
+  }
+
+  for key in keys.iter() {
+    let chunk = match chunk_manager.get_chunk(key) {
+      Some(c) => c,
+      None => continue
+    };
 
     let data = chunk.octree.compute_mesh2(
       VoxelMode::SurfaceNets, &chunk_manager, key.clone(), 0
     );
 
-    println!("{:?} data.indices {}", key, data.indices.len());
+    // println!("{:?} data.indices {}", key, data.indices.len());
     if data.indices.len() == 0 {
       continue;
+    }
+
+    if ![[0, 0, 0], [0, 0, 1]].contains(key) {
+      // continue;
     }
 
     let pos = bevy_voxel_res.get_pos_2(chunk.key) + Vec3::new(-50.0, 0.0, 0.0);
@@ -345,7 +351,7 @@ fn generate_mesh_2(
 
     let mut color = Color::rgb(0.7, 0.7, 0.7);
 
-    let k = [0, 0, 0];
+    
     if chunk.key[0] == k[0] && chunk.key[2] == k[0] {
       color = Color::rgb(1.0, 0.0, 0.0);
     }
