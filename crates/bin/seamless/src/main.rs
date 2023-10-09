@@ -2,7 +2,7 @@ use bevy::{prelude::*, render::{render_resource::PrimitiveTopology, mesh::Indice
 use bevy_egui::{EguiContexts, egui::{Frame, Color32, Pos2, Rect, RichText, Style, Vec2}, EguiPlugin};
 use bevy_flycam::{FlyCam, NoCameraPlayerPlugin};
 use bevy_voxel::{BevyVoxelPlugin, BevyVoxelResource};
-use voxels::{data::{voxel_octree::{VoxelMode, VoxelOctree}, surface_nets::VoxelReuse}, chunk::{chunk_manager::{self, ChunkManager, Chunk, ChunkMode, voxel_by_noise}, adjacent_keys}};
+use voxels::{data::{voxel_octree::{VoxelMode, VoxelOctree}, surface_nets::{VoxelReuse, get_surface_nets2}}, chunk::{chunk_manager::{self, ChunkManager, Chunk, ChunkMode, voxel_by_noise}, adjacent_keys}};
 
 fn main() {
   App::new()
@@ -14,7 +14,7 @@ fn main() {
     .add_systems(Startup, old_mesh_system)
     // .add_systems(Startup, new_mesh_system)
     // .add_systems(Startup, custom_octree_test)
-    .add_systems(Startup, generate_mesh_1)
+    .add_systems(Startup, generate_mesh_2)
     .add_systems(Update, show_diagnostic_texts)
     .run();
 }
@@ -235,6 +235,133 @@ fn generate_mesh_1(
     // println!("render key {:?}", key);
   }
 }
+
+fn generate_mesh_2(
+  mut commands: Commands,
+  mut meshes: ResMut<Assets<Mesh>>,
+  mut materials: ResMut<Assets<StandardMaterial>>,
+  mut bevy_voxel_res: ResMut<BevyVoxelResource>,
+) {
+  let mut colors = Vec::new();
+  for _ in 0..256 {
+    colors.push([0.0, 0.0, 0.0]);
+  }
+
+  let mut chunk_manager = ChunkManager::default();
+  let mut octree = VoxelOctree::new(0, 4);
+  
+
+    // octree.set_voxel(2, 2, 2, 1);
+  // let mut chunk = chunk_manager.set_voxel_2(&[2, 2, 2], 1);
+
+
+
+  let key = [0, 0, 0];
+  let chunk = ChunkManager::new_chunk_2(
+    &key, 
+    chunk_manager.depth as u8, 
+    0, 
+    chunk_manager.noise,
+    voxel_by_noise
+  );
+
+  chunk_manager.set_chunk(&key, &chunk);
+
+
+  // let size = 25;
+  // for x in 0..size {
+  //   for y in 0..size {
+  //     for z in 0..size {
+  //       if y < 5 {
+  //         // chunk.octree.set_voxel(x, y, z, 1);
+  //         chunk_manager.set_voxel_2(&[x.into(), y.into(), z.into()], 1);
+  //       }
+  //     }
+  //   }
+  // }
+
+  // let data = get_surface_nets2(
+  //   &octree, 
+  //   &chunk_manager, 
+  //   &mut VoxelReuse::default(), 
+  //   &colors, 
+  //   chunk_manager.voxel_scale, 
+  //   [0, 0, 0], 
+  //   0
+  // );
+  
+  // let data = chunk.octree.compute_mesh2(
+  //   VoxelMode::SurfaceNets, &chunk_manager, chunk.key.clone(), 0
+  // );
+
+  // println!("data.indices.len() {}", data.indices.len());
+
+  // let pos = bevy_voxel_res.get_pos_2(chunk.key) + Vec3::new(-50.0, 0.0, 0.0);
+
+  // let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
+  // render_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.positions.clone());
+  // render_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, data.normals.clone());
+  // render_mesh.set_indices(Some(Indices::U32(data.indices.clone())));
+
+  // let mut color = Color::rgb(0.7, 0.7, 0.7);
+  // commands
+  //   .spawn(MaterialMeshBundle {
+  //     mesh: meshes.add(render_mesh),
+  //     material: materials.add(color.into()),
+  //     transform: Transform::from_translation(pos),
+  //     ..default()
+  //   });
+
+
+
+  let keys = vec![[0, 0, 0], [0, 0, 1]];
+  for key in keys.iter() {
+
+    if ![[0, -1, 0]].contains(key) {
+      // continue;
+    }
+
+    // let chunk = chunk_manager.new_chunk_mut(key);
+    let chunk = ChunkManager::new_chunk_2(
+      key, chunk_manager.depth as u8, 0, chunk_manager.noise, voxel_by_noise
+    );
+    chunk_manager.set_chunk(key, &chunk);
+
+    let data = chunk.octree.compute_mesh2(
+      VoxelMode::SurfaceNets, &chunk_manager, key.clone(), 0
+    );
+
+    println!("{:?} data.indices {}", key, data.indices.len());
+    if data.indices.len() == 0 {
+      continue;
+    }
+
+    let pos = bevy_voxel_res.get_pos_2(chunk.key) + Vec3::new(-50.0, 0.0, 0.0);
+
+    let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
+    render_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.positions.clone());
+    render_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, data.normals.clone());
+    render_mesh.set_indices(Some(Indices::U32(data.indices.clone())));
+
+    let mut color = Color::rgb(0.7, 0.7, 0.7);
+
+    let k = [0, 0, 0];
+    if chunk.key[0] == k[0] && chunk.key[2] == k[0] {
+      color = Color::rgb(1.0, 0.0, 0.0);
+    }
+    commands
+      .spawn(MaterialMeshBundle {
+        mesh: meshes.add(render_mesh),
+        material: materials.add(color.into()),
+        transform: Transform::from_translation(pos),
+        ..default()
+      }); 
+
+    // println!("render key {:?}", key);
+  }
+}
+
+
 
 
 fn show_diagnostic_texts(

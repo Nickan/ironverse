@@ -87,6 +87,19 @@ impl Default for Chunk {
   }
 }
 
+impl Chunk {
+  fn new(key: [i64; 3], depth: u8) -> Self {
+    Self {
+      key: key,
+      lod: 4,
+      octree: VoxelOctree::new(0, depth),
+      mode: ChunkMode::Unloaded,
+      is_default: true,
+    }
+  }
+}
+
+
 #[derive(Clone)]
 pub struct ChunkManager {
   pub chunks: HashMap<[i64; 3], Chunk>,
@@ -125,6 +138,7 @@ impl Default for ChunkManager {
       voxel_scale: 1.0,
       range: 1,
       colors: DEFAULT_COLOR_PALETTE.to_vec(),
+      voxel_reuse: voxel_reuse,
     }
   }
 }
@@ -207,7 +221,8 @@ impl ChunkManager {
     let key = voxel_pos_to_key(pos, self.chunk_size);
     let mut chunk = match self.chunks.get(&key) {
       Some(c) => c.clone(),
-      None => ChunkManager::new_chunk_1(&key, self.depth as u8, 0, self.noise)
+      // None => ChunkManager::new_chunk_1(&key, self.depth as u8, 0, self.noise)
+      None => Chunk::new(key, self.depth as u8)
     };
 
     let sizei64 = self.chunk_size as i64;
@@ -357,8 +372,8 @@ impl ChunkManager {
           let mid_y = y as i64 - region_middle_pos;
 
           /* Uncomment this later, testing for now */
-          // let voxel = if mid_y < elevation { 1 } else { 0 };
-          let voxel = if mid_y < 0 { 1 } else { 0 };
+          let voxel = if mid_y < elevation { 1 } else { 0 };
+          // let voxel = if mid_y < 0 { 1 } else { 0 };
           data.push([octree_x, octree_y, octree_z, voxel]);
 
           /*
@@ -699,6 +714,7 @@ pub fn voxel_by_noise(x: i64, y: i64, z: i64, middle: i64, noise: OpenSimplex) -
   // }
   // 0
 
+  // if height < middle {
   if y < middle {
     // println!("y {}", y);
     return 1;

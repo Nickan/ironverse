@@ -38,3 +38,10 @@ script = '''
   clear
   cargo run -p editor
 '''
+
+[tasks.run]
+script = '''
+  clear
+  clear
+  cargo run -p ${@}
+'''

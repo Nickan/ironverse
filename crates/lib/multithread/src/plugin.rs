@@ -95,7 +95,7 @@ pub fn send_chunk(chunk: Chunk) {
 pub fn send_colors(colors: &Vec<[f32; 3]>) {
   let encoded: Vec<u8> = bincode::serialize(colors).unwrap();
   let str = array_bytes::bytes2hex("", &encoded);
-
+  
   let e = CustomEvent::new_with_event_init_dict(
     &EventType::SendColors.to_string(), CustomEventInit::new().detail(&JsValue::from_str(&str))
   ).unwrap();

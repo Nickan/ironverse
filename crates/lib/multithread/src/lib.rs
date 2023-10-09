@@ -12,7 +12,7 @@ use web_sys::{CustomEvent, HtmlInputElement, CustomEventInit};
 
 
 use std::sync::RwLock;
-static COLORS: RwLock<Vec<[f32; 3]>> = RwLock::new(Vec::new());
+static COLORS: RwLock<Vec<[f32; 3]>> = RwLock::new(Vec::new()); // Should not be all caps
 
 pub mod plugin;
 

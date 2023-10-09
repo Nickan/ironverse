@@ -60,7 +60,7 @@ impl VoxelReuse {
     let grid_pos_len = get_len_by_size(size - 1, axis);
     let grid_pos = vec![GridPosition::default(); grid_pos_len];
 
-    println!("VoxelReuse size {} len {} grid_pos_len {}", size, len, grid_pos_len);
+    // println!("VoxelReuse size {} len {} grid_pos_len {}", size, len, grid_pos_len);
 
     VoxelReuse {
       voxels: voxels,
@@ -167,9 +167,10 @@ pub fn get_surface_nets2(
 ) -> MeshData {
   let size = octree.get_size();
   let voxel_start = 0;
-  let voxel_end = octree.get_size() + 0;
+  // let voxel_end = octree.get_size() + 1;
+  let voxel_end = 24;
 
-  // println!("voxel_end {}", voxel_end);
+  println!("voxel_end {}", voxel_end);
 
   let mut voxel_reuse_1 = VoxelReuse::new_1(voxel_end);
 
@@ -177,6 +178,8 @@ pub fn get_surface_nets2(
   let start_x = key[0] * size as i64;
   let start_y = key[1] * size as i64;
   let start_z = key[2] * size as i64;
+
+  println!("start_z {}", start_z);
 
   for x in voxel_start..voxel_end {
     for y in voxel_start..voxel_end {
@@ -196,7 +199,7 @@ pub fn get_surface_nets2(
         voxel_reuse_1.voxels[index] = voxel;
 
         if voxel > 0 && x > 15 {
-          println!("voxel at {} {} {}", x, y, z);
+          // println!("voxel at {} {} {}", x, y, z);
         }
       }
     }
@@ -984,6 +987,112 @@ mod tests {
     Ok(())
   }
 
+  #[test]
+  fn test_voxel_reuse_against_octree() -> Result<(), String> {
+    let mut octree = VoxelOctree::new(0, 4);
+    let voxel_start = 0;
+    let voxel_end = octree.get_size() + 0;
+
+    let mut voxel_reuse = VoxelReuse::new_1(voxel_end);
+
+
+    let mut new_value = 0;
+
+    for x in voxel_start..voxel_end {
+      for y in voxel_start..voxel_end {
+        for z in voxel_start..voxel_end {
+          new_value = if new_value == 255 { 0 } else { new_value + 1 };
+
+          octree.set_voxel(x, y, z, new_value);
+
+          let index = coord_to_index(x, y, z, voxel_start, voxel_end);
+          voxel_reuse.voxels[index] = new_value;
+        }
+      }
+    }
+
+    for x in voxel_start..voxel_end {
+      for y in voxel_start..voxel_end {
+        for z in voxel_start..voxel_end {
+          let voxel = octree.get_voxel(x, y, z);
+          let index = coord_to_index(x, y, z, voxel_start, voxel_end);
+          assert_eq!(voxel_reuse.voxels[index], voxel);
+        }
+      }
+    }
+    Ok(())
+  }
+
+
+  #[test]
+  fn test_voxel_reuse_against_chunk_manager() -> Result<(), String> {
+    let mut chunk_manager = ChunkManager::default();
+
+    let mut octree = VoxelOctree::new(0, 4);
+    let voxel_start = 0;
+    let voxel_end = octree.get_size() + 2;
+
+    let mut voxel_reuse = VoxelReuse::new_1(voxel_end);
+
+
+    let mut new_value = 0;
+
+    for x in voxel_start..voxel_end {
+      for y in voxel_start..voxel_end {
+        for z in voxel_start..voxel_end {
+          new_value = if new_value == 255 { 0 } else { new_value + 1 };
+
+          chunk_manager.set_voxel_2(&[x as i64, y as i64, z as i64], new_value);
+
+          let index = coord_to_index(x, y, z, voxel_start, voxel_end);
+          voxel_reuse.voxels[index] = new_value;
+        }
+      }
+    }
+
+    for x in voxel_start..voxel_end {
+      for y in voxel_start..voxel_end {
+        for z in voxel_start..voxel_end {
+          let voxel = chunk_manager.get_voxel_2(&[x.into(), y.into(), z.into()]);
+          let index = coord_to_index(x, y, z, voxel_start, voxel_end);
+          assert_eq!(voxel_reuse.voxels[index], voxel);
+        }
+      }
+    }
+    Ok(())
+  }
+
+  #[test]
+  fn test_get_surface_nets2() -> Result<(), String> {
+    let mut chunk_manager = ChunkManager::default();
+    let mut octree = VoxelOctree::new(0, 4);
+
+    // octree.set_voxel(2, 2, 2, 1);
+    chunk_manager.set_voxel_2(&[2, 2, 2], 1);
+
+    let mut colors = Vec::new();
+    for _ in 0..256 {
+      colors.push([0.0, 0.0, 0.0]);
+    }
+
+    let data = get_surface_nets2(
+      &octree, 
+      &chunk_manager, 
+      &mut VoxelReuse::default(), 
+      &colors, 
+      chunk_manager.voxel_scale, 
+      [0, 0, 0], 
+      0
+    );
+
+    assert_eq!(data.indices.len(), 36);
+
+    // println!("data.indices.len() {}", data.indices.len());
+
+
+
+    Ok(())
+  }
 
 
   
