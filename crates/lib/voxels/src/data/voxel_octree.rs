@@ -426,7 +426,7 @@ impl VoxelOctree {
   pub fn compute_mesh2(
     &self, 
     mode: VoxelMode,
-    chunk_manager: &ChunkManager,
+    chunk_manager: &mut ChunkManager,
     key: [i64; 3],
     lod: usize,
   ) -> MeshData {
@@ -437,8 +437,6 @@ impl VoxelOctree {
         self,
         chunk_manager,
         &mut voxel_reuse,
-        &chunk_manager.colors,
-        chunk_manager.voxel_scale,
         key,
         lod
       ),

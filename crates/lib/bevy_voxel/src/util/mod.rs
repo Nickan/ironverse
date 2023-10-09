@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use voxels::chunk::chunk_manager::{ChunkManager, Chunk};
+use voxels::chunk::chunk_manager::{ChunkManager, Chunk, voxel_by_noise};
 use crate::BevyVoxelResource;
 
 pub fn set_voxel_default(
@@ -30,6 +30,28 @@ pub fn load_chunk(
 
   res.unwrap().clone()
 }
+
+pub fn load_chunk_2(
+  resource: &mut BevyVoxelResource, 
+  key: [i64; 3],
+  lod: usize,
+) -> Chunk {
+  let res = resource.chunk_manager.get_chunk(&key);
+  if res.is_none() {
+    let chunk = ChunkManager::new_chunk_2(
+      &key, 
+      resource.chunk_manager.depth as u8,
+      lod,
+      resource.chunk_manager.noise,
+      voxel_by_noise
+    );
+    resource.chunk_manager.set_chunk(&key, &chunk);
+    return chunk;
+  }
+
+  res.unwrap().clone()
+}
+
 
 pub fn load_chunk_with_lod(
   resource: &mut BevyVoxelResource, 

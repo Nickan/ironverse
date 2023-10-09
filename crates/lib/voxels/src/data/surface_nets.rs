@@ -158,10 +158,8 @@ pub fn get_surface_nets(
 ///
 pub fn get_surface_nets2(
   octree: &VoxelOctree, 
-  chunk_manager: &ChunkManager,
+  chunk_manager: &mut ChunkManager,
   voxel_reuse: &mut VoxelReuse, // Change this param implementation later
-  colors: &Vec<[f32; 3]>,
-  scale: f32,
   key: [i64; 3],
   lod: usize,
 ) -> MeshData {
@@ -203,10 +201,10 @@ pub fn get_surface_nets2(
   for x in start..end {
     for y in start..end {
       for z in start..end {
-        init_grid(&mut layout, &voxel_reuse_1, x, y, z, scale);
-        detect_face_x(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, colors);
-        detect_face_y(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, colors);
-        detect_face_z(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, colors);
+        init_grid(&mut layout, &voxel_reuse_1, x, y, z, chunk_manager.voxel_scale);
+        detect_face_x(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, &chunk_manager.colors);
+        detect_face_y(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, &chunk_manager.colors);
+        detect_face_z(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, &chunk_manager.colors);
       }
     }
   }

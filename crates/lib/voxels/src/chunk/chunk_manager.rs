@@ -221,7 +221,9 @@ impl ChunkManager {
     let key = voxel_pos_to_key(pos, self.chunk_size);
     let mut chunk = match self.chunks.get(&key) {
       Some(c) => c.clone(),
-      // None => ChunkManager::new_chunk_1(&key, self.depth as u8, 0, self.noise)
+      // None => ChunkManager::new_chunk_2(
+      //   &key, self.depth as u8, 0, self.noise, voxel_by_noise
+      // )
       None => Chunk::new(key, self.depth as u8)
     };
 
@@ -260,11 +262,17 @@ impl ChunkManager {
     octree.get_voxel(local_x as u32, local_y as u32, local_z as u32)
   }
 
-  pub fn get_voxel_2(&self, pos: &[i64; 3]) -> u8 {
+  pub fn get_voxel_2(&mut self, pos: &[i64; 3]) -> u8 {
     let key = voxel_pos_to_key(pos, self.chunk_size);
     let octree = match self.chunks.get(&key) {
-      Some(c) => &c.octree,
-      None => return 0
+      Some(c) => c.octree.clone(),
+      None =>  { 
+        let chunk = ChunkManager::new_chunk_2(
+          &key, self.depth as u8, 0, self.noise, voxel_by_noise
+        );
+        self.chunks.insert(key, chunk.clone());
+        chunk.octree.clone()
+      }
     };
 
     let sizei64 = self.chunk_size as i64;
@@ -641,6 +649,8 @@ impl ChunkManager {
     self.chunks.get_mut(key)
   }
 
+
+  /// Refactor: Doesn't make any sense
   pub fn set_chunk(&mut self, key: &[i64; 3], chunk: &Chunk) {
     let c = self.chunks.get(key);
     if c.is_some() {

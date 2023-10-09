@@ -48,14 +48,25 @@ impl BevyVoxelResource {
     get_key(pos, scale, seamless_size)
   }
 
-  /// Get all chunks adjacent to the player based on
-  /// Depth, range and voxel scale
+  /// Deprecate in favor of load_adj_chunks_2()
   pub fn load_adj_chunks(&mut self, key: [i64; 3]) -> Vec<Chunk> {
     let mut chunks = Vec::new();
 
     let keys = adjacent_keys(&key, self.chunk_manager.range as i64, true);
     for key in keys.iter() {
       chunks.push(load_chunk(self, *key, 0));
+      
+    }
+
+    chunks
+  }
+
+  pub fn load_adj_chunks_2(&mut self, key: [i64; 3]) -> Vec<Chunk> {
+    let mut chunks = Vec::new();
+
+    let keys = adjacent_keys(&key, self.chunk_manager.range as i64, true);
+    for key in keys.iter() {
+      chunks.push(load_chunk_2(self, *key, 0));
       
     }
 
@@ -76,12 +87,12 @@ impl BevyVoxelResource {
       )
   }
 
-  pub fn compute_mesh2(&self, mode: VoxelMode, chunk: &Chunk) -> MeshData {
+  pub fn compute_mesh2(&mut self, mode: VoxelMode, chunk: &Chunk) -> MeshData {
     chunk
       .octree
       .compute_mesh2(
         mode, 
-        &self.chunk_manager,
+        &mut self.chunk_manager,
         chunk.key,
         chunk.lod
       )

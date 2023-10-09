@@ -11,10 +11,10 @@ fn main() {
     .add_plugins(BevyVoxelPlugin)
     .add_plugin(EguiPlugin)
     .add_systems(Startup, setup)
-    .add_systems(Startup, old_mesh_system)
-    // .add_systems(Startup, new_mesh_system)
+    // .add_systems(Startup, old_mesh_system)
+    .add_systems(Startup, new_mesh_system)
     // .add_systems(Startup, custom_octree_test)
-    .add_systems(Startup, generate_mesh_2)
+    // .add_systems(Startup, generate_mesh_2)
     .add_systems(Update, show_diagnostic_texts)
     .run();
 }
@@ -101,12 +101,17 @@ fn new_mesh_system(
   mut bevy_voxel_res: ResMut<BevyVoxelResource>,
 ) {
   let key = [0, 0, 0];
-  let chunks = bevy_voxel_res.load_adj_chunks(key);
+  let chunks = bevy_voxel_res.load_adj_chunks_2(key);
   for chunk in chunks.iter() {
+    if ![[0, 0, 0]].contains(&chunk.key) {
+      // continue;
+    }
+
     let data = bevy_voxel_res.compute_mesh2(VoxelMode::SurfaceNets, chunk);
     if data.positions.len() == 0 {
       continue;
     }
+
     let pos = bevy_voxel_res.get_pos_2(chunk.key) + Vec3::new(-50.0, 0.0, 0.0);
 
     let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
@@ -116,7 +121,7 @@ fn new_mesh_system(
 
     let mut color = Color::rgb(0.7, 0.7, 0.7);
     if chunk.key[0] == key[0] && chunk.key[2] == key[0] {
-      color = Color::rgb(1.0, 0.0, 0.0);
+      // color = Color::rgb(1.0, 0.0, 0.0);
     }
     commands
       .spawn(MaterialMeshBundle {
@@ -162,7 +167,7 @@ fn custom_octree_test(
 
   let data = chunk.octree.compute_mesh2(
     VoxelMode::SurfaceNets, 
-    &chunk_manager, 
+    &mut chunk_manager, 
     [0, 0, 0], 
     0,
   );
@@ -205,7 +210,7 @@ fn generate_mesh_1(
       key, chunk_manager.depth as u8, 0, chunk_manager.noise, voxel_by_noise
     );
     let data = chunk.octree.compute_mesh2(
-      VoxelMode::SurfaceNets, &chunk_manager, key.clone(), 0
+      VoxelMode::SurfaceNets, &mut chunk_manager, key.clone(), 0
     );
 
     println!("{:?} data.indices {}", key, data.indices.len());
@@ -325,12 +330,12 @@ fn generate_mesh_2(
 
   for key in keys.iter() {
     let chunk = match chunk_manager.get_chunk(key) {
-      Some(c) => c,
+      Some(c) => c.clone(),
       None => continue
     };
 
     let data = chunk.octree.compute_mesh2(
-      VoxelMode::SurfaceNets, &chunk_manager, key.clone(), 0
+      VoxelMode::SurfaceNets, &mut chunk_manager, key.clone(), 0
     );
 
     // println!("{:?} data.indices {}", key, data.indices.len());
