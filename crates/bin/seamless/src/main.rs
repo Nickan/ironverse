@@ -2,7 +2,7 @@ use bevy::{prelude::*, render::{render_resource::PrimitiveTopology, mesh::Indice
 use bevy_egui::{EguiContexts, egui::{Frame, Color32, Pos2, Rect, RichText, Style, Vec2}, EguiPlugin};
 use bevy_flycam::{FlyCam, NoCameraPlayerPlugin};
 use bevy_voxel::{BevyVoxelPlugin, BevyVoxelResource};
-use voxels::{data::{voxel_octree::{VoxelMode, VoxelOctree}, surface_nets::{VoxelReuse, get_surface_nets2}}, chunk::{chunk_manager::{self, ChunkManager, Chunk, ChunkMode, voxel_by_noise}, adjacent_keys}};
+use voxels::{data::{voxel_octree::{VoxelMode, VoxelOctree}, surface_nets::{VoxelReuse, get_surface_nets}}, chunk::{chunk_manager::{self, ChunkManager, Chunk, ChunkMode, voxel_by_noise}, adjacent_keys}};
 
 fn main() {
   App::new()

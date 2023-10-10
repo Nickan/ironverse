@@ -109,14 +109,13 @@ impl Layout {
   }
 }
 
-/// TODO: Deprecate
 pub fn get_surface_nets(
-  octree: &VoxelOctree, 
-  voxel_reuse: &mut VoxelReuse,
+  octree: &VoxelOctree,
+  voxel_reuse: &mut VoxelReuse, // Change this param implementation later
   colors: &Vec<[f32; 3]>,
-  scale: f32,
   key: [i64; 3],
   lod: usize,
+  voxel_scale: f32,
 ) -> MeshData {
   let voxel_start = 0;
   let voxel_end = octree.get_size();
@@ -124,45 +123,13 @@ pub fn get_surface_nets(
     for y in voxel_start..voxel_end {
       for z in voxel_start..voxel_end {
         let voxel = octree.get_voxel(x, y, z);
-
-        let index = coord_to_index(x, y, z, voxel_start, voxel_end);
+        let index = coord_to_index(x, y, z, voxel_start, voxel_end + 2);
         voxel_reuse.voxels[index] = voxel;
       }
     }
   }
 
-  let mut data = MeshData::default();
-  data.key = key;
-  data.lod = lod;
-  // data.lod = 0;
 
-  // Checking for each grid
-  let start = 0;
-  let end = octree.get_size() - 1;
-  let mut layout = Layout::new(end);
-
-  for x in start..end {
-    for y in start..end {
-      for z in start..end {
-        init_grid(&mut layout, voxel_reuse, x, y, z, scale);
-        detect_face_x(&mut data, &mut layout, voxel_reuse, x, y, z, colors);
-        detect_face_y(&mut data, &mut layout, voxel_reuse, x, y, z, colors);
-        detect_face_z(&mut data, &mut layout, voxel_reuse, x, y, z, colors);
-      }
-    }
-  }
-
-  data
-}
-
-///
-pub fn get_surface_nets2(
-  voxel_reuse: &VoxelReuse, // Change this param implementation later
-  colors: &Vec<[f32; 3]>,
-  key: [i64; 3],
-  lod: usize,
-  voxel_scale: f32,
-) -> MeshData {
   let mut data = MeshData::default();
   data.key = key;
   data.lod = lod;

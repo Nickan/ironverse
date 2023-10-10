@@ -211,16 +211,37 @@ impl ChunkManager {
     chunk
   }
 
-  pub fn get_voxel(&mut self, pos: &[i64; 3]) -> u8 {
+  pub fn get_voxel(&self, pos: &[i64; 3]) -> u8 {
     let key = voxel_pos_to_key(pos, self.chunk_size);
     let octree = match self.chunks.get(&key) {
-      Some(c) => c.octree.clone(),
+      Some(c) => &c.octree,
+      None =>  {
+        return 0
+      }
+    };
+
+    let sizei64 = self.chunk_size as i64;
+    let local_x = pos[0] - (key[0] * sizei64);
+    let local_y = pos[1] - (key[1] * sizei64);
+    let local_z = pos[2] - (key[2] * sizei64);
+    octree.get_voxel(local_x as u32, local_y as u32, local_z as u32)
+  }
+
+  pub fn get_voxel_mut(&mut self, pos: &[i64; 3]) -> u8 {
+    let key = voxel_pos_to_key(pos, self.chunk_size);
+    let octree = match self.chunks.get(&key) {
+      Some(c) => &c.octree,
       None =>  { 
         let chunk = ChunkManager::new_chunk(
           &key, self.depth as u8, 0, self.noise, voxel_by_noise
         );
         self.chunks.insert(key, chunk.clone());
-        chunk.octree.clone()
+
+        let sizei64 = self.chunk_size as i64;
+        let local_x = pos[0] - (key[0] * sizei64);
+        let local_y = pos[1] - (key[1] * sizei64);
+        let local_z = pos[2] - (key[2] * sizei64);
+        return chunk.octree.get_voxel(local_x as u32, local_y as u32, local_z as u32)
       }
     };
 

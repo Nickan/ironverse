@@ -404,14 +404,15 @@ impl VoxelOctree {
   pub fn compute_mesh(
     &self, 
     mode: VoxelMode,
-    voxel_reuse: &VoxelReuse,
+    voxel_reuse: &mut VoxelReuse,
     colors: &Vec<[f32; 3]>,
     key: [i64; 3],
     lod: usize,
     voxel_scale: f32,
   ) -> MeshData {
     match mode {
-      VoxelMode::SurfaceNets => get_surface_nets2(
+      VoxelMode::SurfaceNets => get_surface_nets(
+        self,
         voxel_reuse,
         colors,
         key,

@@ -60,14 +60,14 @@ impl BevyVoxelResource {
     chunks
   }
 
-  pub fn compute_mesh(&mut self, mode: VoxelMode, chunk: &mut Chunk) -> MeshData {
-    let reuse = self.get_voxel_reuse(chunk);
+  pub fn compute_mesh(&self, mode: VoxelMode, chunk: &Chunk) -> MeshData {
+    let mut reuse = self.get_voxel_reuse(chunk);
 
     chunk
       .octree
       .compute_mesh(
         mode, 
-        &reuse,
+        &mut reuse,
         &self.chunk_manager.colors,
         chunk.key,
         chunk.lod,
@@ -75,13 +75,13 @@ impl BevyVoxelResource {
       )
   }
 
-  pub fn get_voxel_reuse(&mut self, chunk: &mut Chunk) -> VoxelReuse {
+  pub fn get_voxel_reuse(&self, chunk: &Chunk) -> VoxelReuse {
     let key = chunk.key.clone();
     let octree = &chunk.octree;
 
     let size = octree.get_size();
     let voxel_start = 0;
-    let voxel_end = octree.get_size() + 2;
+    let voxel_end = size + 2;
 
     let mut reuse = VoxelReuse::new_1(voxel_end);
 
@@ -89,25 +89,71 @@ impl BevyVoxelResource {
     let start_y = key[1] * size as i64;
     let start_z = key[2] * size as i64;
 
+    let start = size - 1;
+
     for x in voxel_start..voxel_end {
       for y in voxel_start..voxel_end {
         for z in voxel_start..voxel_end {
+
+          // If any of number is greater than start, process below
+          if !(x > start || y > start || z > start) {
+            continue;
+          }
+
           // let voxel = octree.get_voxel(x, y, z);
           let world_x = start_x + x as i64;
           let world_y = start_y + y as i64;
           let world_z = start_z + z as i64;
 
           let voxel = self.chunk_manager.get_voxel(&[world_x, world_y, world_z]);
-
-          let index = coord_to_index(x, y, z, voxel_start, voxel_end);
-
-          // chunk.neighbor_data[index] = voxel;
+          let index = coord_to_index(x, y, z, 0, voxel_end);
           reuse.voxels[index] = voxel;
         }
       }
     }
     reuse
   }
+
+  pub fn get_voxel_reuse_mut(&mut self, chunk: &Chunk) -> VoxelReuse {
+    let key = chunk.key.clone();
+    let octree = &chunk.octree;
+
+    let size = octree.get_size();
+    let voxel_start = 0;
+    let voxel_end = size + 2;
+
+    let mut reuse = VoxelReuse::new_1(voxel_end);
+
+    let start_x = key[0] * size as i64;
+    let start_y = key[1] * size as i64;
+    let start_z = key[2] * size as i64;
+
+    let start = size - 1;
+
+    for x in voxel_start..voxel_end {
+      for y in voxel_start..voxel_end {
+        for z in voxel_start..voxel_end {
+
+          // If any of number is greater than start, process below
+          if !(x > start || y > start || z > start) {
+            continue;
+          }
+
+          // let voxel = octree.get_voxel(x, y, z);
+          let world_x = start_x + x as i64;
+          let world_y = start_y + y as i64;
+          let world_z = start_z + z as i64;
+
+          let voxel = self.chunk_manager.get_voxel_mut(&[world_x, world_y, world_z]);
+          let index = coord_to_index(x, y, z, 0, voxel_end);
+          reuse.voxels[index] = voxel;
+        }
+      }
+    }
+    reuse
+  }
+
+
 
   pub fn get_pos(&self, key: [i64; 3]) -> Vec3 {
     let seamless = self.chunk_manager.chunk_size;

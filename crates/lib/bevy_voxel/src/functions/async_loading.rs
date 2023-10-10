@@ -63,26 +63,25 @@ fn recv_process_mesh(
   let depth = bevy_voxel_res.chunk_manager.depth;
   let scale = bevy_voxel_res.chunk_manager.voxel_scale;
 
+  let recv = bevy_voxel_res.recv_process_mesh.clone();
+  for mut chunk in recv.drain() {
+    let colors = bevy_voxel_res.chunk_manager.colors.clone();
 
-  // let recv = bevy_voxel_res.recv_process_mesh.clone();
-  // for chunk in recv.drain() {
-  //   let colors = bevy_voxel_res.chunk_manager.colors.clone();
-
-  //   let reuse = bevy_voxel_res.get_voxel_reuse(&chunk);
-  //   let task = thread_pool.spawn(async move {
-  //     chunk.octree.compute_mesh(
-  //       VoxelMode::SurfaceNets, 
-  //       &reuse, 
-  //       &colors, 
-  //       chunk.key,
-  //       chunk.lod,
-  //       scale, 
-  //     )
-  //   });
+    let mut reuse = bevy_voxel_res.get_voxel_reuse_mut(&chunk);
+    let task = thread_pool.spawn(async move {
+      chunk.octree.compute_mesh(
+        VoxelMode::SurfaceNets, 
+        &mut reuse, 
+        &colors, 
+        chunk.key,
+        chunk.lod,
+        scale, 
+      )
+    });
   
-  //   // Spawn new entity and add our new task as a component
-  //   commands.spawn(LoadMeshData(task));
-  // }
+    // Spawn new entity and add our new task as a component
+    commands.spawn(LoadMeshData(task));
+  }
   
 }
 
