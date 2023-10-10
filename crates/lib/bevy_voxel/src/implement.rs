@@ -48,7 +48,6 @@ impl BevyVoxelResource {
     get_key(pos, scale, seamless_size)
   }
 
-  /// Deprecate in favor of load_adj_chunks_2()
   pub fn load_adj_chunks(&mut self, key: [i64; 3]) -> Vec<Chunk> {
     let mut chunks = Vec::new();
 
@@ -61,35 +60,22 @@ impl BevyVoxelResource {
     chunks
   }
 
-  pub fn load_adj_chunks_2(&mut self, key: [i64; 3]) -> Vec<Chunk> {
-    let mut chunks = Vec::new();
+  pub fn compute_mesh(&mut self, mode: VoxelMode, chunk: &mut Chunk) -> MeshData {
+    let reuse = self.get_voxel_reuse(chunk);
 
-    let keys = adjacent_keys(&key, self.chunk_manager.range as i64, true);
-    for key in keys.iter() {
-      chunks.push(load_chunk_2(self, *key, 0));
-      
-    }
-
-    chunks
-  }
-
-  /// Return mesh data needed for collision or rendering
-  pub fn compute_mesh(&self, mode: VoxelMode, chunk: &Chunk) -> MeshData {
     chunk
       .octree
       .compute_mesh(
         mode, 
-        &mut VoxelReuse::new(self.chunk_manager.depth, 3),
+        &reuse,
         &self.chunk_manager.colors,
-        self.chunk_manager.voxel_scale,
         chunk.key,
-        chunk.lod
+        chunk.lod,
+        self.chunk_manager.voxel_scale
       )
   }
 
-  pub fn compute_mesh2(&mut self, mode: VoxelMode, chunk: &Chunk) -> MeshData {
-    // Create one dimensional array
-
+  pub fn get_voxel_reuse(&mut self, chunk: &mut Chunk) -> VoxelReuse {
     let key = chunk.key.clone();
     let octree = &chunk.octree;
 
@@ -111,42 +97,19 @@ impl BevyVoxelResource {
           let world_y = start_y + y as i64;
           let world_z = start_z + z as i64;
 
-          let voxel = self.chunk_manager.get_voxel_2(&[world_x, world_y, world_z]);
+          let voxel = self.chunk_manager.get_voxel(&[world_x, world_y, world_z]);
 
           let index = coord_to_index(x, y, z, voxel_start, voxel_end);
+
+          // chunk.neighbor_data[index] = voxel;
           reuse.voxels[index] = voxel;
         }
       }
     }
-
-    chunk
-      .octree
-      .compute_mesh2(
-        mode, 
-        &reuse,
-        &self.chunk_manager.colors,
-        chunk.key,
-        chunk.lod,
-        self.chunk_manager.voxel_scale
-      )
+    reuse
   }
 
-
-  /// Deprecate later, in favor of get_pos_2
-  /// Return a world position based on chunk size(depth) and voxel scale
   pub fn get_pos(&self, key: [i64; 3]) -> Vec3 {
-    let seamless = self.chunk_manager.seamless_size();
-    let scale = self.chunk_manager.voxel_scale;
-    let mut pos = key_to_world_coord_f32(&key, seamless);
-
-    pos[0] *= scale;
-    pos[1] *= scale;
-    pos[2] *= scale;
-    
-    Vec3::new(pos[0], pos[1], pos[2])
-  }
-
-  pub fn get_pos_2(&self, key: [i64; 3]) -> Vec3 {
     let seamless = self.chunk_manager.chunk_size;
     let scale = self.chunk_manager.voxel_scale;
     let mut pos = key_to_world_coord_f32(&key, seamless);
@@ -368,7 +331,7 @@ impl BevyVoxelResource {
   }
 
 
-  pub fn set_voxel(&mut self, pos: Vec3, voxel: u8) {
+  pub fn set_voxel(&mut self, pos: Vec3, voxel: u8) -> Chunk {
     let mul = 1.0 / self.chunk_manager.voxel_scale;
     let p = [
       (pos.x * mul) as i64,
@@ -376,13 +339,7 @@ impl BevyVoxelResource {
       (pos.z * mul) as i64,
     ];
 
-    self.chunk_manager.set_voxel(&p, voxel);
-  }
-
-  pub fn set_voxel_default(
-    &mut self, coord: [i64; 3], voxel: u8
-  ) -> Vec<([i64; 3], Chunk)> {
-    self.chunk_manager.set_voxel(&coord, voxel)
+    self.chunk_manager.set_voxel(&p, voxel)
   }
 
   pub fn set_voxel_cube(
@@ -405,17 +362,20 @@ impl BevyVoxelResource {
       for y in min..max {
         for z in min..max {
 
-          let tmp = [
-            p[0] as i64 + x,
-            p[1] as i64 + y,
-            p[2] as i64 + z,
-          ];
+          let tmp = Vec3::new(
+            p[0] + x as f32,
+            p[1] + y as f32,
+            p[2] + z as f32,
+          );
 
-          let chunks = self.set_voxel_default(tmp, preview.voxel);
+          let c = self.set_voxel(tmp, preview.voxel);
+          res.insert(c.key, c.clone());
 
-          for (key, chunk) in chunks.iter() {
-            res.insert(*key, chunk.clone());
-          }
+          // let chunks = self.set_voxel_default(tmp, preview.voxel);
+
+          // for (key, chunk) in chunks.iter() {
+          //   res.insert(*key, chunk.clone());
+          // }
         }
       }
     }
@@ -446,17 +406,26 @@ impl BevyVoxelResource {
       for y in min..max {
         for z in min..max {
 
-          let tmp = [
-            p[0] as i64 + x,
-            p[1] as i64 + y,
-            p[2] as i64 + z,
-          ];
+          let tmp = Vec3::new(
+            p[0] + x as f32,
+            p[1] + y as f32,
+            p[2] + z as f32,
+          );
 
-          let chunks = self.set_voxel_default(tmp, voxel);
+          let c = self.set_voxel(tmp, voxel);
+          res.insert(c.key, c.clone());
 
-          for (key, chunk) in chunks.iter() {
-            res.insert(*key, chunk.clone());
-          }
+          // let tmp = [
+          //   p[0] as i64 + x,
+          //   p[1] as i64 + y,
+          //   p[2] as i64 + z,
+          // ];
+
+          // let chunks = self.set_voxel_default(tmp, voxel);
+
+          // for (key, chunk) in chunks.iter() {
+          //   res.insert(*key, chunk.clone());
+          // }
         }
       }
     }
@@ -480,17 +449,26 @@ impl BevyVoxelResource {
 
     let coords = get_sphere_coords(size);
     for c in coords.iter() {
-      let tmp = [
-        p[0] as i64 + c[0],
-        p[1] as i64 + c[1],
-        p[2] as i64 + c[2],
-      ];
-      
-      let chunks = self.set_voxel_default(tmp, voxel);
+      let tmp = Vec3::new(
+        p[0] + c[0] as f32,
+        p[1] + c[1] as f32,
+        p[2] + c[2] as f32,
+      );
 
-      for (key, chunk) in chunks.iter() {
-        res.insert(*key, chunk.clone());
-      }
+      let c = self.set_voxel(tmp, voxel);
+      res.insert(c.key, c.clone());
+
+      // let tmp = [
+      //   p[0] as i64 + c[0],
+      //   p[1] as i64 + c[1],
+      //   p[2] as i64 + c[2],
+      // ];
+      
+      // let chunks = self.set_voxel_default(tmp, voxel);
+
+      // for (key, chunk) in chunks.iter() {
+      //   res.insert(*key, chunk.clone());
+      // }
     }
     res
   }
@@ -510,17 +488,26 @@ impl BevyVoxelResource {
     let size = preview.sphere_size;
     let coords = get_sphere_coords(size);
     for c in coords.iter() {
-      let tmp = [
-        p[0] as i64 + c[0],
-        p[1] as i64 + c[1],
-        p[2] as i64 + c[2],
-      ];
-      
-      let chunks = self.set_voxel_default(tmp, preview.voxel);
+      let tmp = Vec3::new(
+        p[0] + c[0] as f32,
+        p[1] + c[1] as f32,
+        p[2] + c[2] as f32,
+      );
 
-      for (key, chunk) in chunks.iter() {
-        res.insert(*key, chunk.clone());
-      }
+      let c = self.set_voxel(tmp, preview.voxel);
+      res.insert(c.key, c.clone());
+
+      // let tmp = [
+      //   p[0] as i64 + c[0],
+      //   p[1] as i64 + c[1],
+      //   p[2] as i64 + c[2],
+      // ];
+      
+      // let chunks = self.set_voxel_default(tmp, preview.voxel);
+
+      // for (key, chunk) in chunks.iter() {
+      //   res.insert(*key, chunk.clone());
+      // }
     }
     res
   }
@@ -529,7 +516,7 @@ impl BevyVoxelResource {
   /// Load Chunks, MeshData then create Collider for MeshData
   pub fn load_adj_mesh_data(&mut self, key: [i64; 3]) -> Vec<([i64; 3], MeshData)> {
     let mut mesh_data = Vec::new();
-    let chunks = self.load_adj_chunks(key);
+    let mut chunks = self.load_adj_chunks(key);
 
     for _ in 0..self.colliders_cache.len() {
       let h = self.colliders_cache.pop().unwrap();
@@ -538,7 +525,7 @@ impl BevyVoxelResource {
 
     self.colliders_cache.clear();
 
-    for chunk in chunks.iter() {
+    for chunk in chunks.iter_mut() {
       let data = self.compute_mesh(VoxelMode::SurfaceNets, chunk);
       if data.positions.len() == 0 {
         continue;
@@ -554,7 +541,7 @@ impl BevyVoxelResource {
   }
 
   pub fn load_adj_chunks_with_collider(&mut self, key: [i64; 3]) -> Vec<Chunk> {
-    let chunks = self.load_adj_chunks(key);
+    let mut chunks = self.load_adj_chunks(key);
 
     for _ in 0..self.colliders_cache.len() {
       let h = self.colliders_cache.pop().unwrap();
@@ -563,7 +550,7 @@ impl BevyVoxelResource {
 
     self.colliders_cache.clear();
 
-    for chunk in chunks.iter() {
+    for chunk in chunks.iter_mut() {
       let data = self.compute_mesh(VoxelMode::SurfaceNets, chunk);
       if data.positions.len() == 0 {
         continue;
@@ -717,8 +704,8 @@ impl BevyVoxelResource {
     let mut chunk_meshes = Vec::new();
     let keys = self.get_keys_by_lod(key, lod);
     for k in keys.iter() {
-      let chunk = load_chunk_with_lod(self, *k, lod);
-      let data = self.compute_mesh(VoxelMode::SurfaceNets, &chunk);
+      let mut chunk = load_chunk_with_lod(self, *k, lod);
+      let data = self.compute_mesh(VoxelMode::SurfaceNets, &mut chunk);
       if data.positions.len() == 0 {
         continue;
       }
@@ -768,7 +755,8 @@ impl BevyVoxelResource {
     // }
     // self.colliders_cache.clear();
 
-    for chunk in chunks.iter() {
+    let mut c = chunks.clone();
+    for chunk in c.iter_mut() {
       let data = self.compute_mesh(VoxelMode::SurfaceNets, chunk);
       if data.positions.len() == 0 {
         continue;

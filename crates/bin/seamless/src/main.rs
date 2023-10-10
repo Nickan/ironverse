@@ -56,44 +56,6 @@ fn setup(
     .insert(FlyCam);
 }
 
-fn old_mesh_system(
-  mut commands: Commands,
-  mut meshes: ResMut<Assets<Mesh>>,
-  mut materials: ResMut<Assets<StandardMaterial>>,
-  mut bevy_voxel_res: ResMut<BevyVoxelResource>,
-) {
-  let key = [0, 0, 0];
-  let chunks = bevy_voxel_res.load_adj_chunks(key);
-  for chunk in chunks.iter() {
-    let data = bevy_voxel_res.compute_mesh(VoxelMode::SurfaceNets, chunk);
-    if data.positions.len() == 0 {
-      continue;
-    }
-    let pos = bevy_voxel_res.get_pos(chunk.key);
-
-    let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
-    render_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.positions.clone());
-    render_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, data.normals.clone());
-    render_mesh.set_indices(Some(Indices::U32(data.indices.clone())));
-
-    let mut color = Color::rgb(0.7, 0.7, 0.7);
-    if chunk.key[0] == key[0] && chunk.key[2] == key[0] {
-      color = Color::rgb(1.0, 0.0, 0.0);
-    }
-    commands
-      .spawn(MaterialMeshBundle {
-        mesh: meshes.add(render_mesh),
-        material: materials.add(color.into()),
-        transform: Transform::from_translation(pos),
-        ..default()
-      })
-      // .insert(ChunkGraphics {
-      //   handle: bevy_voxel_res.add_collider(pos, &data)
-      // })
-      ; 
-  }
-}
-
 fn new_mesh_system(
   mut commands: Commands,
   mut meshes: ResMut<Assets<Mesh>>,
@@ -101,18 +63,19 @@ fn new_mesh_system(
   mut bevy_voxel_res: ResMut<BevyVoxelResource>,
 ) {
   let key = [0, 0, 0];
-  let chunks = bevy_voxel_res.load_adj_chunks_2(key);
-  for chunk in chunks.iter() {
+  let mut chunks = bevy_voxel_res.load_adj_chunks(key);
+  for chunk in chunks.iter_mut() {
     if ![[0, 0, 0]].contains(&chunk.key) {
       // continue;
     }
 
-    let data = bevy_voxel_res.compute_mesh2(VoxelMode::SurfaceNets, chunk);
+    let data = bevy_voxel_res.compute_mesh(VoxelMode::SurfaceNets, chunk);
     if data.positions.len() == 0 {
       continue;
     }
+    // println!("data.len() {}", data.indices.len());
 
-    let pos = bevy_voxel_res.get_pos_2(chunk.key) + Vec3::new(-50.0, 0.0, 0.0);
+    let pos = bevy_voxel_res.get_pos(chunk.key) + Vec3::new(-50.0, 0.0, 0.0);
 
     let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
     render_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.positions.clone());

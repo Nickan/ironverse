@@ -403,28 +403,6 @@ impl VoxelOctree {
 
   pub fn compute_mesh(
     &self, 
-    mode: VoxelMode, 
-    voxel_reuse: &mut VoxelReuse,
-    colors: &Vec<[f32; 3]>,
-    scale: f32,
-    key: [i64; 3],
-    lod: usize,
-  ) -> MeshData {
-    match mode {
-      VoxelMode::SurfaceNets => get_surface_nets(
-        self, 
-        voxel_reuse, 
-        colors, 
-        scale,
-        key,
-        lod
-      ),
-      _ => panic!("VoxelMode {:?} implementation not existing yet", mode),
-    }
-  }
-
-  pub fn compute_mesh2(
-    &self, 
     mode: VoxelMode,
     voxel_reuse: &VoxelReuse,
     colors: &Vec<[f32; 3]>,

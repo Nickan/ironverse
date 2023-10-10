@@ -1,5 +1,5 @@
 use bevy::{prelude::*, tasks::{AsyncComputeTaskPool, Task}};
-use voxels::{chunk::chunk_manager::{ChunkManager, Chunk}, data::{voxel_octree::{VoxelMode, MeshData}, surface_nets::VoxelReuse}};
+use voxels::{chunk::chunk_manager::{ChunkManager, Chunk, voxel_by_noise}, data::{voxel_octree::{VoxelMode, MeshData}, surface_nets::VoxelReuse}};
 use futures_lite::future;
 use crate::BevyVoxelResource;
 
@@ -28,7 +28,7 @@ fn recv_keys(
   for (key, lod) in bevy_voxel_res.recv_key.drain() {
     let key = key.clone();
     let task = thread_pool.spawn(async move {
-      let chunk = ChunkManager::new_chunk(&key, depth, lod, noise);
+      let chunk = ChunkManager::new_chunk(&key, depth, lod, noise, voxel_by_noise);
       chunk
     });
   
@@ -56,31 +56,33 @@ fn recv_chunk(
 
 fn recv_process_mesh(
   mut commands: Commands,
-  bevy_voxel_res: Res<BevyVoxelResource>,
+  mut bevy_voxel_res: ResMut<BevyVoxelResource>,
 ) {
   let thread_pool = AsyncComputeTaskPool::get();
 
   let depth = bevy_voxel_res.chunk_manager.depth;
   let scale = bevy_voxel_res.chunk_manager.voxel_scale;
 
-  for chunk in bevy_voxel_res.recv_process_mesh.drain() {
-    let colors = bevy_voxel_res.chunk_manager.colors.clone();
 
-    /// Create a method to pass a 
-    let task = thread_pool.spawn(async move {
-      chunk.octree.compute_mesh(
-        VoxelMode::SurfaceNets, 
-        &mut VoxelReuse::new(depth, 3), 
-        &colors, 
-        scale, 
-        chunk.key,
-        chunk.lod
-      )
-    });
+  // let recv = bevy_voxel_res.recv_process_mesh.clone();
+  // for chunk in recv.drain() {
+  //   let colors = bevy_voxel_res.chunk_manager.colors.clone();
+
+  //   let reuse = bevy_voxel_res.get_voxel_reuse(&chunk);
+  //   let task = thread_pool.spawn(async move {
+  //     chunk.octree.compute_mesh(
+  //       VoxelMode::SurfaceNets, 
+  //       &reuse, 
+  //       &colors, 
+  //       chunk.key,
+  //       chunk.lod,
+  //       scale, 
+  //     )
+  //   });
   
-    // Spawn new entity and add our new task as a component
-    commands.spawn(LoadMeshData(task));
-  }
+  //   // Spawn new entity and add our new task as a component
+  //   commands.spawn(LoadMeshData(task));
+  // }
   
 }
 

@@ -60,7 +60,7 @@ pub struct MeshColliderData {
 
 // TODO: Refactor, change name for clarity
 pub fn nearest_voxel_point(
-  chunk_manager: &ChunkManager,
+  chunk_manager: &mut ChunkManager,
   intersection: Vec3,
   _include_current: bool,
   voxel: u8,
