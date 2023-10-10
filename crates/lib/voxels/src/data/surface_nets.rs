@@ -157,54 +157,28 @@ pub fn get_surface_nets(
 
 ///
 pub fn get_surface_nets2(
-  octree: &VoxelOctree, 
-  chunk_manager: &mut ChunkManager,
-  voxel_reuse: &mut VoxelReuse, // Change this param implementation later
+  voxel_reuse: &VoxelReuse, // Change this param implementation later
+  colors: &Vec<[f32; 3]>,
   key: [i64; 3],
   lod: usize,
+  voxel_scale: f32,
 ) -> MeshData {
-  let size = octree.get_size();
-  let voxel_start = 0;
-  let voxel_end = octree.get_size() + 2;
-  let mut voxel_reuse_1 = VoxelReuse::new_1(voxel_end);
-
-
-  let start_x = key[0] * size as i64;
-  let start_y = key[1] * size as i64;
-  let start_z = key[2] * size as i64;
-
-  for x in voxel_start..voxel_end {
-    for y in voxel_start..voxel_end {
-      for z in voxel_start..voxel_end {
-        // let voxel = octree.get_voxel(x, y, z);
-        let world_x = start_x + x as i64;
-        let world_y = start_y + y as i64;
-        let world_z = start_z + z as i64;
-
-        let voxel = chunk_manager.get_voxel_2(&[world_x, world_y, world_z]);
-
-        let index = coord_to_index(x, y, z, voxel_start, voxel_end);
-        voxel_reuse_1.voxels[index] = voxel;
-      }
-    }
-  }
-
   let mut data = MeshData::default();
   data.key = key;
   data.lod = lod;
 
   // Checking for each grid
   let start = 0;
-  let end = voxel_end - 1;
+  let end = voxel_reuse.size - 1;
   let mut layout = Layout::new(end);
 
   for x in start..end {
     for y in start..end {
       for z in start..end {
-        init_grid(&mut layout, &voxel_reuse_1, x, y, z, chunk_manager.voxel_scale);
-        detect_face_x(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, &chunk_manager.colors);
-        detect_face_y(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, &chunk_manager.colors);
-        detect_face_z(&mut data, &mut layout, &mut voxel_reuse_1, x, y, z, &chunk_manager.colors);
+        init_grid(&mut layout, voxel_reuse, x, y, z, voxel_scale);
+        detect_face_x(&mut data, &mut layout, voxel_reuse, x, y, z, colors);
+        detect_face_y(&mut data, &mut layout, voxel_reuse, x, y, z, colors);
+        detect_face_z(&mut data, &mut layout, voxel_reuse, x, y, z, colors);
       }
     }
   }
@@ -320,7 +294,7 @@ fn init_grid(
 fn detect_face_x(
   data: &mut MeshData,
   layout: &mut Layout, 
-  voxel_reuse: &mut VoxelReuse, 
+  voxel_reuse: &VoxelReuse, 
   x: u32, 
   y: u32, 
   z: u32,
@@ -450,7 +424,7 @@ fn detect_face_x(
 fn detect_face_y(
   data: &mut MeshData,
   layout: &mut Layout, 
-  voxel_reuse: &mut VoxelReuse, 
+  voxel_reuse: &VoxelReuse, 
   x: u32, 
   y: u32, 
   z: u32,
@@ -587,7 +561,7 @@ fn detect_face_y(
 fn detect_face_z(
   data: &mut MeshData,
   layout: &mut Layout, 
-  voxel_reuse: &mut VoxelReuse, 
+  voxel_reuse: &VoxelReuse, 
   x: u32, 
   y: u32, 
   z: u32,

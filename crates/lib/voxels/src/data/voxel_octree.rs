@@ -426,19 +426,19 @@ impl VoxelOctree {
   pub fn compute_mesh2(
     &self, 
     mode: VoxelMode,
-    chunk_manager: &mut ChunkManager,
+    voxel_reuse: &VoxelReuse,
+    colors: &Vec<[f32; 3]>,
     key: [i64; 3],
     lod: usize,
+    voxel_scale: f32,
   ) -> MeshData {
-
-    let mut voxel_reuse = chunk_manager.voxel_reuse.clone();
     match mode {
       VoxelMode::SurfaceNets => get_surface_nets2(
-        self,
-        chunk_manager,
-        &mut voxel_reuse,
+        voxel_reuse,
+        colors,
         key,
-        lod
+        lod,
+        voxel_scale,
       ),
       _ => panic!("VoxelMode {:?} implementation not existing yet", mode),
     }

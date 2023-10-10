@@ -65,6 +65,8 @@ fn recv_process_mesh(
 
   for chunk in bevy_voxel_res.recv_process_mesh.drain() {
     let colors = bevy_voxel_res.chunk_manager.colors.clone();
+
+    /// Create a method to pass a 
     let task = thread_pool.spawn(async move {
       chunk.octree.compute_mesh(
         VoxelMode::SurfaceNets, 

@@ -144,7 +144,7 @@ fn custom_octree_test(
   mut materials: ResMut<Assets<StandardMaterial>>,
   mut bevy_voxel_res: ResMut<BevyVoxelResource>,
 ) {
-  let depth = 4;
+/*   let depth = 4;
 
   let mut octree = VoxelOctree::new(0, depth);
   octree.set_voxel(1, 1, 1, 1);
@@ -185,7 +185,7 @@ fn custom_octree_test(
       material: materials.add(Color::rgb(1.0, 0.0, 0.0).into()),
       transform: Transform::from_translation(Vec3::ZERO),
       ..default()
-    }); 
+    });  */
 }
 
 fn generate_mesh_1(
@@ -194,7 +194,7 @@ fn generate_mesh_1(
   mut materials: ResMut<Assets<StandardMaterial>>,
   mut bevy_voxel_res: ResMut<BevyVoxelResource>,
 ) {
-  let mut chunk_manager = ChunkManager::new_1(4);
+/*   let mut chunk_manager = ChunkManager::new_1(4);
 
   let k = [0, 0, 0];
   // let keys = adjacent_keys(&k, 1, true);
@@ -235,10 +235,8 @@ fn generate_mesh_1(
         material: materials.add(color.into()),
         transform: Transform::from_translation(pos),
         ..default()
-      }); 
-
-    // println!("render key {:?}", key);
-  }
+      });
+  } */
 }
 
 fn generate_mesh_2(
@@ -247,7 +245,7 @@ fn generate_mesh_2(
   mut materials: ResMut<Assets<StandardMaterial>>,
   mut bevy_voxel_res: ResMut<BevyVoxelResource>,
 ) {
-  let mut colors = Vec::new();
+/*   let mut colors = Vec::new();
   for _ in 0..256 {
     colors.push([0.0, 0.0, 0.0]);
   }
@@ -369,7 +367,7 @@ fn generate_mesh_2(
       }); 
 
     // println!("render key {:?}", key);
-  }
+  } */
 }
 
 

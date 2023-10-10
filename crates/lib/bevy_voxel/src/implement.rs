@@ -1,7 +1,7 @@
 use bevy::{prelude::*, utils::HashMap};
 use rapier3d::{prelude::{Vector, ColliderHandle, Ray, QueryFilter}, na::Point3};
 use utils::{RayUtils, Utils};
-use voxels::{chunk::{chunk_manager::{ChunkManager, Chunk}, adjacent_keys}, data::{voxel_octree::{VoxelMode, MeshData}, surface_nets::VoxelReuse}};
+use voxels::{chunk::{chunk_manager::{ChunkManager, Chunk}, adjacent_keys}, data::{voxel_octree::{VoxelMode, MeshData}, surface_nets::VoxelReuse}, utils::coord_to_index};
 use voxels::utils::key_to_world_coord_f32;
 use crate::{BevyVoxelResource, physics::Physics, Preview, ShapeState, EditState, ChunkMesh};
 use crate::util::*;
@@ -88,13 +88,46 @@ impl BevyVoxelResource {
   }
 
   pub fn compute_mesh2(&mut self, mode: VoxelMode, chunk: &Chunk) -> MeshData {
+    // Create one dimensional array
+
+    let key = chunk.key.clone();
+    let octree = &chunk.octree;
+
+    let size = octree.get_size();
+    let voxel_start = 0;
+    let voxel_end = octree.get_size() + 2;
+
+    let mut reuse = VoxelReuse::new_1(voxel_end);
+
+    let start_x = key[0] * size as i64;
+    let start_y = key[1] * size as i64;
+    let start_z = key[2] * size as i64;
+
+    for x in voxel_start..voxel_end {
+      for y in voxel_start..voxel_end {
+        for z in voxel_start..voxel_end {
+          // let voxel = octree.get_voxel(x, y, z);
+          let world_x = start_x + x as i64;
+          let world_y = start_y + y as i64;
+          let world_z = start_z + z as i64;
+
+          let voxel = self.chunk_manager.get_voxel_2(&[world_x, world_y, world_z]);
+
+          let index = coord_to_index(x, y, z, voxel_start, voxel_end);
+          reuse.voxels[index] = voxel;
+        }
+      }
+    }
+
     chunk
       .octree
       .compute_mesh2(
         mode, 
-        &mut self.chunk_manager,
+        &reuse,
+        &self.chunk_manager.colors,
         chunk.key,
-        chunk.lod
+        chunk.lod,
+        self.chunk_manager.voxel_scale
       )
   }
 

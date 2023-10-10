@@ -925,7 +925,6 @@ mod tests {
       chunk_manager.set_chunk(key, &chunk);
     }
 
-
     let default_len = chunk_manager.chunk_size as i64;
     let len = 20;
     let ground = 5;
