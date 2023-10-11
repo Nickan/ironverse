@@ -817,6 +817,7 @@ impl BevyVoxelResource {
     chunks
   }
 
+  /// FIXME: Has to be renamed with creating collider
   pub fn load_mesh_data(
     &mut self, 
     chunks: &Vec<Chunk>,
@@ -840,6 +841,27 @@ impl BevyVoxelResource {
       let c = self.add_collider(pos, &data);
       // self.colliders_cache.push(c);
       mesh_data.push((data, c));
+    }
+
+    mesh_data
+  }
+
+  pub fn load_mesh_data_1(
+    &mut self, 
+    chunks: &Vec<Chunk>,
+  ) -> Vec<MeshData> {
+
+    let mut mesh_data = Vec::new();
+
+    let mut c = chunks.clone();
+    for chunk in c.iter_mut() {
+      let data = self.compute_mesh(VoxelMode::SurfaceNets, chunk);
+      if data.positions.len() == 0 {
+        continue;
+      }
+
+      let pos = self.get_pos(chunk.key);
+      mesh_data.push(data);
     }
 
     mesh_data

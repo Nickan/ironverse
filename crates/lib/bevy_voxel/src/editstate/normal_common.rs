@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use crate::{EditState, Preview, BevyVoxelResource, Chunks, MeshComponent};
+use rapier3d::prelude::ColliderHandle;
+use utils::Utils;
+use voxels::chunk::voxel_pos_to_key;
+use crate::{EditState, Preview, BevyVoxelResource, Chunks, MeshComponent, Center};
 use super::{EditEvents, EditEvent};
 
 pub struct CustomPlugin;
@@ -54,13 +57,13 @@ fn preview_position(
 
 fn modify_voxels(
   mut bevy_voxel_res: ResMut<BevyVoxelResource>,
-  mut chunks: Query<(&Preview, &mut Chunks, &mut MeshComponent)>,
+  mut chunks: Query<(&Center, &Preview, &mut Chunks, &mut MeshComponent)>,
 
   mut edit_event_reader: EventReader<EditEvents>,
 ) {
   for e in edit_event_reader.iter() {
     if e.event == EditEvent::AddCube {
-      for (preview, mut chunks, mut mesh_comp) in &mut chunks {
+      for (center, preview, mut chunks, mut mesh_comp) in &mut chunks {
         if preview.pos.is_none() {
           continue;
         }
@@ -73,18 +76,25 @@ fn modify_voxels(
           all_chunks.push(chunk.clone());
           chunks.data.insert(*key, chunk.clone());
         }
-
-        let data = bevy_voxel_res.load_mesh_data(&all_chunks);
-        for (mesh_data, handle) in data.iter() {
-          
+        
+        let data = bevy_voxel_res.load_mesh_data_1(&all_chunks);
+        for mesh_data in data.iter() {
           mesh_comp.data.insert(mesh_data.key.clone(), mesh_data.clone());
-          mesh_comp.added.push((mesh_data.clone(), *handle));
+
+          if Utils::get_tile_range(&center.key, &mesh_data.key) <= 1 {
+            let pos = bevy_voxel_res.get_pos(mesh_data.key);
+            let handle = bevy_voxel_res.add_collider(pos, mesh_data);
+            mesh_comp.added.push((mesh_data.clone(), handle));
+          } else {
+            mesh_comp.added.push((mesh_data.clone(), ColliderHandle::invalid()));
+          }
+          
         }
       }
     }
 
     if e.event == EditEvent::AddSphere {
-      for (preview, mut chunks, mut mesh_comp) in &mut chunks {
+      for (center, preview, mut chunks, mut mesh_comp) in &mut chunks {
         if preview.pos.is_none() {
           continue;
         }
@@ -101,7 +111,15 @@ fn modify_voxels(
         let data = bevy_voxel_res.load_mesh_data(&all_chunks);
         for (mesh_data, handle) in data.iter() {
           mesh_comp.data.insert(mesh_data.key.clone(), mesh_data.clone());
-          mesh_comp.added.push((mesh_data.clone(), *handle));
+          
+
+          if Utils::get_tile_range(&center.key, &mesh_data.key) <= 1 {
+            let pos = bevy_voxel_res.get_pos(mesh_data.key);
+            let handle = bevy_voxel_res.add_collider(pos, mesh_data);
+            mesh_comp.added.push((mesh_data.clone(), handle));
+          } else {
+            mesh_comp.added.push((mesh_data.clone(), ColliderHandle::invalid()));
+          }
         }
       }
     }
