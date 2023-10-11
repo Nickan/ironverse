@@ -8,7 +8,7 @@ impl Plugin for CustomPlugin {
   fn build(&self, app: &mut App) {
     app
       .add_systems(OnEnter(GameState::Start), start)
-      .add_systems(OnEnter(GameState::Init), init)
+      // .add_systems(OnEnter(GameState::Init), init)
       .add_systems(Update, update)
       ;
   }
@@ -75,8 +75,6 @@ fn update(
     let p = trans.translation;
     let rigid_body = &mut bevy_voxel_res.physics.rigid_body_set[player.body];
     rigid_body.set_position(Vector3::new(p.x, p.y, p.z).into(), false);
-
-    println!("p {:?}", p);
 
     let k = bevy_voxel_res.get_key(p);
     if player.key != k {

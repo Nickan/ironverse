@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_voxel::BevyVoxelResource;
 use crate::components::player::Player;
 
 pub struct CustomPlugin;
@@ -14,15 +15,21 @@ fn add(
   mut commands: Commands,
   mut meshes: ResMut<Assets<Mesh>>,
   mut materials: ResMut<Assets<StandardMaterial>>,
-  players: Query<Entity, Added<Player>>,
+  players: Query<(Entity, &Player), Added<Player>>,
+
+  bevy_voxel_res: Res<BevyVoxelResource>,
 ) {
-  for entity in &players {
+  for (entity, player) in &players {
+    let rigid_body = &bevy_voxel_res.physics.rigid_body_set[player.body];
+    let p = rigid_body.position().translation;
+    let pos = Vec3::new(p.x, p.y, p.z);
+
     commands
       .entity(entity)
       .insert(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
         material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-        transform: Transform::from_xyz(0.0, 0.5, 0.0),
+        transform: Transform::from_translation(pos),
         ..default()
       });
   }

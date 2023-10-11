@@ -22,13 +22,12 @@ fn add_to_player(
   for entity in &player_query {
     commands
       .entity(entity)
-      // .insert(ChunkEdit::default())
-      // .insert(ChunkEditParams::default())
-      // .insert(Selected::default())
-      // .insert(Chunks::default())
-      // .insert(MeshComponent::default())
-      // .insert(Preview::default())
-      ;
+      .insert(ChunkEdit::default())
+      .insert(ChunkEditParams::default())
+      .insert(Selected::default())
+      .insert(Chunks::default())
+      .insert(MeshComponent::default())
+      .insert(Preview::default());
 
     commands
       .spawn(SelectedGraphics)

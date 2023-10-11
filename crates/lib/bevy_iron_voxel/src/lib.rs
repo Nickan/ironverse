@@ -88,7 +88,6 @@ impl Plugin for VoxelWorldPlugin {
             vec![0, range as u32, 4, 6, 8],
           ))
           .add_plugins(data::CustomPlugin)
-          // .add_plugins(physics::CustomPlugin)
           .add_plugins(input::CustomPlugin)
           .add_plugins(components::CustomPlugin)
           .add_plugins(graphics::CustomPlugin)
