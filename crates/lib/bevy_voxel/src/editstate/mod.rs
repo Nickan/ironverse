@@ -55,7 +55,7 @@ fn modify_voxels(
           chunks.data.insert(*key, chunk.clone());
         }
 
-        let data = bevy_voxel_res.load_mesh_data(&all_chunks);
+        let data = bevy_voxel_res.load_mesh_data_mut(&all_chunks);
         for (mesh_data, handle) in data.iter() {
           
           mesh_comp.data.insert(mesh_data.key.clone(), mesh_data.clone());

@@ -100,17 +100,7 @@ fn new_mesh_system(
       ;
   }
 
-  let lod = 1;
-  let keys = bevy_voxel_res.get_keys_by_lod(key, lod);
-  for key in keys.iter() {
-    bevy_voxel_res.chunk_manager.new_chunk_mut_1(key, lod);
-  }
-
   
-
-
-
-
 
 }
 

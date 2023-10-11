@@ -422,6 +422,13 @@ impl BevyVoxelResource {
       pos[1] * mul,
       pos[2] * mul,
     ];
+
+    let key = voxel_pos_to_key(&[
+      p[0] as i64,
+      p[1] as i64,
+      p[2] as i64,
+    ], self.chunk_manager.chunk_size);
+
     for x in min..max {
       for y in min..max {
         for z in min..max {
@@ -432,20 +439,22 @@ impl BevyVoxelResource {
             p[2] + z as f32,
           );
 
-          let c = self.set_voxel(tmp, preview.voxel);
-          res.insert(c.key, c.clone());
-
-          // let chunks = self.set_voxel_default(tmp, preview.voxel);
-
-          // for (key, chunk) in chunks.iter() {
-          //   res.insert(*key, chunk.clone());
-          // }
+          let _ = self.set_voxel(tmp, preview.voxel);
+          let keys = adjacent_keys(&key, 1, true);
+          for k in keys.iter() {
+            let r = self.chunk_manager.chunks.get(k);
+            if r.is_some() {
+              let c = r.unwrap();
+              res.insert(*k, c.clone());
+            }
+          }
         }
       }
     }
     res
   }
 
+  /// FIXME: What's the difference with set_voxel_cube()?
   pub fn set_voxel_cube_default(
     &mut self, 
     pos: Vec3, 
@@ -482,14 +491,14 @@ impl BevyVoxelResource {
             p[2] + z as f32,
           );
 
-          // let c = self.set_voxel(tmp, voxel);
-          // res.insert(c.key, c.clone());
-
           let _ = self.set_voxel(tmp, voxel);
           let keys = adjacent_keys(&key, 1, true);
           for k in keys.iter() {
-            let c = self.chunk_manager.chunks.get(k).unwrap();
-            res.insert(*k, c.clone());
+            let r = self.chunk_manager.chunks.get(k);
+            if r.is_some() {
+              let c = r.unwrap();
+              res.insert(*k, c.clone());
+            }
           }
         }
       }

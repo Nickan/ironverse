@@ -67,8 +67,6 @@ fn add(
           lod: data.lod as usize,
           collider: *collider_handle,
         });
-
-      // println!("data.lod {}", data.lod);
     }
     mesh_comp.added.clear();
   }

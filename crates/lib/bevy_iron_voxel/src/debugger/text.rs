@@ -1,5 +1,7 @@
 use bevy::{prelude::*, window::PrimaryWindow, diagnostic::{FrameTimeDiagnosticsPlugin, DiagnosticsStore}};
 use bevy_egui::{EguiContexts, egui::{self, Frame, Color32, Style, Rect, Vec2, Pos2, RichText}};
+use bevy_voxel::Preview;
+use voxels::chunk::voxel_pos_to_key;
 use crate::{components::{player::Player, chunk_edit::ChunkEdit}, graphics::ChunkGraphics};
 
 pub struct CustomPlugin;
@@ -23,6 +25,8 @@ fn show_texts(
   players: Query<&Transform, With<Player>>,
   chunk_edits: Query<&ChunkEdit>,
   chunks: Query<&ChunkGraphics>,
+
+  previews: Query<(&Transform, &Preview), With<Preview>>,
 ) {
   let res = windows.get_single();
   if res.is_err() {
@@ -73,6 +77,25 @@ fn show_texts(
   }
 
   let total_meshes = chunks.iter().len();
+
+  let mut preview_pos = None;
+  let mut preview_key = None;
+  for (trans, preview) in &previews {
+    preview_pos = preview.pos;
+
+    if preview_pos.is_some() {
+      let p = preview.pos.unwrap();
+      let pos = [
+        p.x as i64,
+        p.y as i64,
+        p.z as i64,
+      ];
+      preview_key = Some(voxel_pos_to_key(&pos, 16));
+    }
+
+    
+  }
+
   egui::Window::new("DebuggerTexts")
     .title_bar(false)
     .frame(frame)
@@ -101,7 +124,13 @@ fn show_texts(
         );
 
         ui.label(
-          RichText::new(format!("Raycast: {:?}", range_pos))
+          RichText::new(format!("Preview pos: {:?}", preview_pos))
+            .color(Color32::WHITE)
+            .size(20.0)
+        );
+
+        ui.label(
+          RichText::new(format!("Preview key: {:?}", preview_key))
             .color(Color32::WHITE)
             .size(20.0)
         );

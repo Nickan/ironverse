@@ -29,9 +29,9 @@ impl Plugin for CustomPlugin {
       .add_systems(Update, shape_state_changed)
       .add_systems(Update, (
         load_main_octrees,
-        load_main_delta_octrees,
-        load_lod_chunks,
-        load_lod_delta_octrees
+        // load_main_delta_octrees,
+        // load_lod_chunks,
+        // load_lod_delta_octrees
       ));
 
     cfg_if! {
@@ -42,8 +42,6 @@ impl Plugin for CustomPlugin {
     }
   }
 }
-
-
 
 fn startup() {
   println!("startup BevyVoxel");
