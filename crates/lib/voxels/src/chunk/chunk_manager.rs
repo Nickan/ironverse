@@ -395,6 +395,12 @@ impl ChunkManager {
     c
   }
 
+  pub fn new_chunk_mut_1(&mut self, key: &[i64; 3], lod: usize) -> Chunk {
+    let c = ChunkManager::new_chunk(key, self.depth as u8, lod, self.noise, voxel_by_noise);
+    self.chunks.insert(*key, c.clone());
+    c
+  }
+
 
 
 

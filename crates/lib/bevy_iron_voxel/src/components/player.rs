@@ -19,7 +19,8 @@ fn start(
   mut bevy_voxel_res: ResMut<BevyVoxelResource>,
 ) {
   // // let pos = [0.0, 5.0, 0.0];
-  let pos = Vec3::new(0.0, 0.4, 0.0);
+  // FIXME: Not working, using the FlyCam position
+  let pos = Vec3::new(0.0, 10.0, 0.0); 
 
   let (body, collider) = bevy_voxel_res.physics.spawn_character(1.0, 0.5, pos);
   let k = bevy_voxel_res.get_key(pos);
@@ -49,7 +50,7 @@ fn init(
       Center {prev_key: k, key: k } )
     );
 
-  // info!("player init() {:?}", pos);
+  info!("player init() {:?}", pos);
 }
 
 pub fn create_new_player(mut bevy_voxel_res: ResMut<BevyVoxelResource>, game_res: &Res<GameResource>) -> (Player, Center) {
@@ -74,6 +75,8 @@ fn update(
     let p = trans.translation;
     let rigid_body = &mut bevy_voxel_res.physics.rigid_body_set[player.body];
     rigid_body.set_position(Vector3::new(p.x, p.y, p.z).into(), false);
+
+    println!("p {:?}", p);
 
     let k = bevy_voxel_res.get_key(p);
     if player.key != k {

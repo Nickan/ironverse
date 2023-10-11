@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_flycam::FlyCam;
+use bevy_voxel::BevyVoxelResource;
 use crate::components::player::Player;
 
 pub struct CustomPlugin;
@@ -12,15 +13,18 @@ impl Plugin for CustomPlugin {
 
 fn add(
   mut commands: Commands,
-  query: Query<Entity, Added<Player>>,
+  query: Query<(Entity, &Player), Added<Player>>,
+  bevy_voxel_res: Res<BevyVoxelResource>,
 ) {
-  for entity in &query {
-    info!("Add cam");
-
-    // let rigid_body = &mut physics.rigid_body_set[player.body];
-    // let pos = rigid_body.position().translation;
-    let pos = Vec3::new(0.0, 1.59, 0.0);
+  for (entity, player) in &query {
+    let rigid_body = &bevy_voxel_res.physics.rigid_body_set[player.body];
+    let p = rigid_body.position().translation;
+    let pos = Vec3::new(p.x, p.y, p.z);
+    // let pos = Vec3::new(0.0, 15.0, 0.0);
     let forward = Vec3::new(0.69, -0.15, 0.70);
+
+
+    info!("pos {}", pos);
     commands
       .entity(entity)
       .insert((

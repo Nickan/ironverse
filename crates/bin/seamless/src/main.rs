@@ -11,10 +11,7 @@ fn main() {
     .add_plugins(BevyVoxelPlugin)
     .add_plugin(EguiPlugin)
     .add_systems(Startup, setup)
-    // .add_systems(Startup, old_mesh_system)
     .add_systems(Startup, new_mesh_system)
-    // .add_systems(Startup, custom_octree_test)
-    // .add_systems(Startup, generate_mesh_2)
     .add_systems(Update, show_diagnostic_texts)
     .run();
 }
@@ -62,6 +59,10 @@ fn new_mesh_system(
   mut materials: ResMut<Assets<StandardMaterial>>,
   mut bevy_voxel_res: ResMut<BevyVoxelResource>,
 ) {
+  // Load data based on lod
+  // Load mesh based on lod
+  // Spawn Mesh for render
+
   let key = [0, 0, 0];
   let mut chunks = bevy_voxel_res.load_adj_chunks(key);
   for chunk in chunks.iter_mut() {
@@ -96,245 +97,22 @@ fn new_mesh_system(
       // .insert(ChunkGraphics {
       //   handle: bevy_voxel_res.add_collider(pos, &data)
       // })
-      ; 
-  }
-}
-
-
-fn custom_octree_test(
-  mut commands: Commands,
-  mut meshes: ResMut<Assets<Mesh>>,
-  mut materials: ResMut<Assets<StandardMaterial>>,
-  mut bevy_voxel_res: ResMut<BevyVoxelResource>,
-) {
-/*   let depth = 4;
-
-  let mut octree = VoxelOctree::new(0, depth);
-  octree.set_voxel(1, 1, 1, 1);
-
-  let key = [0, 0, 0];
-
-  let mut chunk = Chunk {
-    key: key.clone(),
-    lod: 0,
-    octree: octree,
-    mode: ChunkMode::Loaded,
-    is_default: false,
-  };
-
-
-  let mut chunk_manager = ChunkManager::new_1(depth.into());
-  // let chunk = chunk_manager.new_chunk_mut(&[0, 0, 0]);
-  chunk_manager.chunks.insert(key, chunk.clone());
-  
-
-  let data = chunk.octree.compute_mesh2(
-    VoxelMode::SurfaceNets, 
-    &mut chunk_manager, 
-    [0, 0, 0], 
-    0,
-  );
-
-  println!("data.indices {}", data.indices.len());
-
-  let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
-  render_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.positions.clone());
-  render_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, data.normals.clone());
-  render_mesh.set_indices(Some(Indices::U32(data.indices.clone())));
-
-  commands
-    .spawn(MaterialMeshBundle {
-      mesh: meshes.add(render_mesh),
-      material: materials.add(Color::rgb(1.0, 0.0, 0.0).into()),
-      transform: Transform::from_translation(Vec3::ZERO),
-      ..default()
-    });  */
-}
-
-fn generate_mesh_1(
-  mut commands: Commands,
-  mut meshes: ResMut<Assets<Mesh>>,
-  mut materials: ResMut<Assets<StandardMaterial>>,
-  mut bevy_voxel_res: ResMut<BevyVoxelResource>,
-) {
-/*   let mut chunk_manager = ChunkManager::new_1(4);
-
-  let k = [0, 0, 0];
-  // let keys = adjacent_keys(&k, 1, true);
-  let keys = vec![[0, 0, 0], [0, 0, 1]];
-  for key in keys.iter() {
-
-    if ![[0, -1, 0]].contains(key) {
-      // continue;
-    }
-
-    // let chunk = chunk_manager.new_chunk_mut(key);
-    let chunk = ChunkManager::new_chunk_2(
-      key, chunk_manager.depth as u8, 0, chunk_manager.noise, voxel_by_noise
-    );
-    let data = chunk.octree.compute_mesh2(
-      VoxelMode::SurfaceNets, &mut chunk_manager, key.clone(), 0
-    );
-
-    println!("{:?} data.indices {}", key, data.indices.len());
-    if data.indices.len() == 0 {
-      continue;
-    }
-
-    let pos = bevy_voxel_res.get_pos_2(chunk.key) + Vec3::new(-50.0, 0.0, 0.0);
-
-    let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
-    render_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.positions.clone());
-    render_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, data.normals.clone());
-    render_mesh.set_indices(Some(Indices::U32(data.indices.clone())));
-
-    let mut color = Color::rgb(0.7, 0.7, 0.7);
-    if chunk.key[0] == k[0] && chunk.key[2] == k[0] {
-      color = Color::rgb(1.0, 0.0, 0.0);
-    }
-    commands
-      .spawn(MaterialMeshBundle {
-        mesh: meshes.add(render_mesh),
-        material: materials.add(color.into()),
-        transform: Transform::from_translation(pos),
-        ..default()
-      });
-  } */
-}
-
-fn generate_mesh_2(
-  mut commands: Commands,
-  mut meshes: ResMut<Assets<Mesh>>,
-  mut materials: ResMut<Assets<StandardMaterial>>,
-  mut bevy_voxel_res: ResMut<BevyVoxelResource>,
-) {
-/*   let mut colors = Vec::new();
-  for _ in 0..256 {
-    colors.push([0.0, 0.0, 0.0]);
+      ;
   }
 
-  let mut chunk_manager = ChunkManager::default();
-  let mut octree = VoxelOctree::new(0, 4);
-  
-
-    // octree.set_voxel(2, 2, 2, 1);
-  // let mut chunk = chunk_manager.set_voxel_2(&[2, 2, 2], 1);
-
-
-
-  let key = [0, 0, 0];
-  let chunk = ChunkManager::new_chunk_2(
-    &key, 
-    chunk_manager.depth as u8, 
-    0, 
-    chunk_manager.noise,
-    voxel_by_noise
-  );
-
-  chunk_manager.set_chunk(&key, &chunk);
-
-
-  // let size = 25;
-  // for x in 0..size {
-  //   for y in 0..size {
-  //     for z in 0..size {
-  //       if y < 5 {
-  //         // chunk.octree.set_voxel(x, y, z, 1);
-  //         chunk_manager.set_voxel_2(&[x.into(), y.into(), z.into()], 1);
-  //       }
-  //     }
-  //   }
-  // }
-
-  // let data = get_surface_nets2(
-  //   &octree, 
-  //   &chunk_manager, 
-  //   &mut VoxelReuse::default(), 
-  //   &colors, 
-  //   chunk_manager.voxel_scale, 
-  //   [0, 0, 0], 
-  //   0
-  // );
-  
-  // let data = chunk.octree.compute_mesh2(
-  //   VoxelMode::SurfaceNets, &chunk_manager, chunk.key.clone(), 0
-  // );
-
-  // println!("data.indices.len() {}", data.indices.len());
-
-  // let pos = bevy_voxel_res.get_pos_2(chunk.key) + Vec3::new(-50.0, 0.0, 0.0);
-
-  // let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
-  // render_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.positions.clone());
-  // render_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, data.normals.clone());
-  // render_mesh.set_indices(Some(Indices::U32(data.indices.clone())));
-
-  // let mut color = Color::rgb(0.7, 0.7, 0.7);
-  // commands
-  //   .spawn(MaterialMeshBundle {
-  //     mesh: meshes.add(render_mesh),
-  //     material: materials.add(color.into()),
-  //     transform: Transform::from_translation(pos),
-  //     ..default()
-  //   });
-
-
-  let k = [0, 0, 0];
-  // let keys = vec![[0, 0, 0], [0, 0, 1]];
-  let keys = adjacent_keys(&k, 1, true);
+  let lod = 1;
+  let keys = bevy_voxel_res.get_keys_by_lod(key, lod);
   for key in keys.iter() {
-    let chunk = ChunkManager::new_chunk_2(
-      key, chunk_manager.depth as u8, 0, chunk_manager.noise, voxel_by_noise
-    );
-    chunk_manager.set_chunk(key, &chunk);
+    bevy_voxel_res.chunk_manager.new_chunk_mut_1(key, lod);
   }
 
-  for key in keys.iter() {
-    let chunk = match chunk_manager.get_chunk(key) {
-      Some(c) => c.clone(),
-      None => continue
-    };
+  
 
-    let data = chunk.octree.compute_mesh2(
-      VoxelMode::SurfaceNets, &mut chunk_manager, key.clone(), 0
-    );
 
-    // println!("{:?} data.indices {}", key, data.indices.len());
-    if data.indices.len() == 0 {
-      continue;
-    }
 
-    if ![[0, 0, 0], [0, 0, 1]].contains(key) {
-      // continue;
-    }
 
-    let pos = bevy_voxel_res.get_pos_2(chunk.key) + Vec3::new(-50.0, 0.0, 0.0);
 
-    let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
-    render_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.positions.clone());
-    render_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, data.normals.clone());
-    render_mesh.set_indices(Some(Indices::U32(data.indices.clone())));
-
-    let mut color = Color::rgb(0.7, 0.7, 0.7);
-
-    
-    if chunk.key[0] == k[0] && chunk.key[2] == k[0] {
-      color = Color::rgb(1.0, 0.0, 0.0);
-    }
-    commands
-      .spawn(MaterialMeshBundle {
-        mesh: meshes.add(render_mesh),
-        material: materials.add(color.into()),
-        transform: Transform::from_translation(pos),
-        ..default()
-      }); 
-
-    // println!("render key {:?}", key);
-  } */
 }
-
-
-
 
 fn show_diagnostic_texts(
   cameras: Query<&Transform, With<FlyCam>>,
@@ -403,3 +181,12 @@ fn show_diagnostic_texts(
 // struct ChunkGraphics {
 //   pub handle: ColliderHandle,
 // }
+
+
+/* 
+  Prove that at spawn, the mesh data is correct
+*/
+
+
+
+

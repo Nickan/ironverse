@@ -108,7 +108,7 @@ fn load_main_octrees(
     chunks.added_keys.append(&mut keys.clone());
 
 
-    let data = res.load_mesh_data(&tmp_c);
+    let data = res.load_mesh_data_mut(&tmp_c);
     for (d, handle) in data.iter() {
       mesh_comp.data.insert(d.key, d.clone());
       mesh_comp.added.push((d.clone(), *handle));
@@ -241,3 +241,8 @@ fn receive_mesh(
   }
 }
 
+
+
+/*
+  Identifying keys to load, chunks and mesh
+*/
