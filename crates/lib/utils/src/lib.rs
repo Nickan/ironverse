@@ -513,7 +513,6 @@ mod tests {
         assert!(Utils::in_range_by_lod(&key, k, &ranges, lod));
       }
     }
-    
 
     Ok(())
   }

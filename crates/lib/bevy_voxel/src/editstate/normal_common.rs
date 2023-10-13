@@ -77,19 +77,7 @@ fn modify_voxels(
           chunks.data.insert(*key, chunk.clone());
         }
         
-        let data = bevy_voxel_res.load_mesh_data_1(&all_chunks);
-        for mesh_data in data.iter() {
-          mesh_comp.data.insert(mesh_data.key.clone(), mesh_data.clone());
-
-          if Utils::get_tile_range(&center.key, &mesh_data.key) <= 1 {
-            let pos = bevy_voxel_res.get_pos(mesh_data.key);
-            let handle = bevy_voxel_res.add_collider(pos, mesh_data);
-            mesh_comp.added.push((mesh_data.clone(), handle));
-          } else {
-            mesh_comp.added.push((mesh_data.clone(), ColliderHandle::invalid()));
-          }
-          
-        }
+        bevy_voxel_res.respawn_colliders(&center.key, &all_chunks, &mut mesh_comp);
       }
     }
 
@@ -108,19 +96,7 @@ fn modify_voxels(
           chunks.data.insert(*key, chunk.clone());
         }
 
-        let data = bevy_voxel_res.load_mesh_data(&all_chunks);
-        for (mesh_data, handle) in data.iter() {
-          mesh_comp.data.insert(mesh_data.key.clone(), mesh_data.clone());
-          
-
-          if Utils::get_tile_range(&center.key, &mesh_data.key) <= 1 {
-            let pos = bevy_voxel_res.get_pos(mesh_data.key);
-            let handle = bevy_voxel_res.add_collider(pos, mesh_data);
-            mesh_comp.added.push((mesh_data.clone(), handle));
-          } else {
-            mesh_comp.added.push((mesh_data.clone(), ColliderHandle::invalid()));
-          }
-        }
+        bevy_voxel_res.respawn_colliders(&center.key, &all_chunks, &mut mesh_comp);
       }
     }
   }

@@ -1,6 +1,6 @@
 use bevy::{prelude::*, window::PrimaryWindow, diagnostic::{FrameTimeDiagnosticsPlugin, DiagnosticsStore}};
 use bevy_egui::{EguiContexts, egui::{self, Frame, Color32, Style, Rect, Vec2, Pos2, RichText}};
-use bevy_voxel::Preview;
+use bevy_voxel::{Preview, BevyVoxelResource};
 use voxels::chunk::voxel_pos_to_key;
 use crate::{components::{player::Player, chunk_edit::ChunkEdit}, graphics::ChunkGraphics};
 
@@ -27,6 +27,7 @@ fn show_texts(
   chunks: Query<&ChunkGraphics>,
 
   previews: Query<(&Transform, &Preview), With<Preview>>,
+  bevy_voxel_res: Res<BevyVoxelResource>,
 ) {
   let res = windows.get_single();
   if res.is_err() {
@@ -92,9 +93,10 @@ fn show_texts(
       ];
       preview_key = Some(voxel_pos_to_key(&pos, 16));
     }
-
-    
   }
+
+
+  let mut total_colliders = bevy_voxel_res.physics.collider_set.len();
 
   egui::Window::new("DebuggerTexts")
     .title_bar(false)
@@ -109,40 +111,46 @@ fn show_texts(
         style.spacing.item_spacing = Vec2::new(0.0, 0.0);
         ui.set_style(style);
 
-        ui.add_space(450.0);
+        ui.add_space(400.0);
 
         ui.label(
           RichText::new(format!("FPS: {}", fps as u32))
-            .color(Color32::WHITE)
+            .color(Color32::BLACK)
             .size(20.0)
         );
 
         ui.label(
           RichText::new(format!("Pos: {:?}", player_pos))
-            .color(Color32::WHITE)
+            .color(Color32::BLACK)
             .size(20.0)
         );
 
         ui.label(
           RichText::new(format!("Preview pos: {:?}", preview_pos))
-            .color(Color32::WHITE)
+            .color(Color32::BLACK)
             .size(20.0)
         );
 
         ui.label(
           RichText::new(format!("Preview key: {:?}", preview_key))
-            .color(Color32::WHITE)
+            .color(Color32::BLACK)
             .size(20.0)
         );
 
         ui.label(
           RichText::new(format!("forward: {:?}", forward))
-            .color(Color32::WHITE)
+            .color(Color32::BLACK)
             .size(20.0)
         );
 
         ui.label(
           RichText::new(format!("Total Meshes: {}", total_meshes))
+            .color(Color32::BLACK)
+            .size(20.0)
+        );
+
+        ui.label(
+          RichText::new(format!("Total colliders: {}", total_colliders))
             .color(Color32::WHITE)
             .size(20.0)
         );

@@ -3,7 +3,7 @@ use rapier3d::{prelude::{Vector, ColliderHandle, Ray, QueryFilter}, na::Point3};
 use utils::{RayUtils, Utils};
 use voxels::{chunk::{chunk_manager::{ChunkManager, Chunk}, adjacent_keys, voxel_pos_to_key}, data::{voxel_octree::{VoxelMode, MeshData}, surface_nets::VoxelReuse}, utils::coord_to_index};
 use voxels::utils::key_to_world_coord_f32;
-use crate::{BevyVoxelResource, physics::Physics, Preview, ShapeState, EditState, ChunkMesh};
+use crate::{BevyVoxelResource, physics::Physics, Preview, ShapeState, EditState, ChunkMesh, MeshComponent};
 use crate::util::*;
 
 use cfg_if::cfg_if;
@@ -855,7 +855,7 @@ impl BevyVoxelResource {
 
     let mut c = chunks.clone();
     for chunk in c.iter_mut() {
-      let data = self.compute_mesh(VoxelMode::SurfaceNets, chunk);
+      let data = self.compute_mesh_mut(VoxelMode::SurfaceNets, chunk);
       if data.positions.len() == 0 {
         continue;
       }
@@ -889,6 +889,8 @@ impl BevyVoxelResource {
 
       let pos = self.get_pos(chunk.key);
       let c = self.add_collider(pos, &data);
+
+      // println!("collider keys {:?}", chunk.key);
       // self.colliders_cache.push(c);
       mesh_data.push((data, c));
     }
@@ -925,6 +927,29 @@ impl BevyVoxelResource {
       }
     }
   }
+
+
+  pub fn respawn_colliders(
+    &mut self, 
+    key: &[i64; 3],
+    chunks: &Vec<Chunk>, 
+    mesh_comp: &mut MeshComponent
+  ) {
+    let data = self.load_mesh_data_1(&chunks);
+    for mesh_data in data.iter() {
+      mesh_comp.data.insert(mesh_data.key.clone(), mesh_data.clone());
+
+      if self.in_range_by_lod(key, &mesh_data.key, 0) {
+        let pos = self.get_pos(mesh_data.key);
+        let handle = self.add_collider(pos, mesh_data);
+        mesh_comp.added.push((mesh_data.clone(), handle));
+      } else {
+        mesh_comp.added.push((mesh_data.clone(), ColliderHandle::invalid()));
+      }
+      
+    }
+  }
+
 }
 
 /*

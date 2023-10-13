@@ -105,7 +105,6 @@ fn load_main_octrees(
     }
     chunks.added_keys.append(&mut keys.clone());
 
-
     let data = res.load_mesh_data_mut(&tmp_c);
     for (d, handle) in data.iter() {
       mesh_comp.data.insert(d.key, d.clone());
