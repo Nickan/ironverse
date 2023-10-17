@@ -657,12 +657,13 @@ impl BevyVoxelResource {
   /// - calc_pos should be the calculated position based on edit mode
   /// - Add voxel mode(TODO): Probably be a separate function
   /// - Remove voxel mode(TODO): Probably be a separate function
-  pub fn get_preview_cube(
+  fn get_preview_cube(
     &self, calc_pos: Vec3, preview: &Preview,
   ) -> Chunk {
     let voxel = preview.voxel;
     // println!("voxel {}", voxel);
     let size = preview.size;
+    // println!("size {}", size);
 
     let scale = self.chunk_manager.voxel_scale;
     let mul = 1.0 / scale;
@@ -672,11 +673,15 @@ impl BevyVoxelResource {
       calc_pos.z * mul,
     ];
 
-    let mut tmp_manager = self.chunk_manager.clone();
+    let mut preview_manager = self.chunk_manager.clone();
 
     let s = size as i64;
+
     let max = (s / 2) + 1;
     let min = max - s;
+
+    // let min = (s / 2) * -1;
+    // let max = (s / 2);
 
     for x in min..max {
       for y in min..max {
@@ -688,7 +693,7 @@ impl BevyVoxelResource {
             p[2] as i64 + z
           ];
           
-          set_voxel_default(&mut tmp_manager, tmp, voxel);
+          set_voxel_default(&mut preview_manager, tmp, voxel);
         }
       }
     }
@@ -701,6 +706,8 @@ impl BevyVoxelResource {
     let max = preview_size;
     for x in min..max {
       for y in min..max {
+    // for x in 0..chunk.octree.get_size() as i64 - 1 {
+    //   for y in 0..chunk.octree.get_size() as i64 - 1 {
         for z in min..max {
           let local_x = (mid_pos + x) as u32;
           let local_y = (mid_pos + y) as u32;
@@ -711,7 +718,8 @@ impl BevyVoxelResource {
             p[1] as i64 + y,
             p[2] as i64 + z,
           ];
-          let v = tmp_manager.get_voxel(&tmp_pos);
+          let v = preview_manager.get_voxel(&tmp_pos);
+          // let v = preview_manager.get_voxel_mut(&tmp_pos);
           chunk.octree.set_voxel(local_x, local_y, local_z, v);
         }
       }
@@ -721,7 +729,7 @@ impl BevyVoxelResource {
   }
 
 
-  pub fn get_preview_sphere(
+  fn get_preview_sphere(
     &self, pos: Vec3, preview: &Preview
   ) -> Chunk {
     let scale = self.chunk_manager.voxel_scale;

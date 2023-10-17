@@ -7,7 +7,6 @@ pub fn set_voxel_default(
   coord: [i64; 3],
   voxel: u8,
 ) {
-
   chunk_manager.set_voxel(&coord, voxel);
 }
 
