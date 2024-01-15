@@ -93,6 +93,8 @@ pub fn send_chunk(chunk: Chunk) {
 }
 
 pub fn send_colors(colors: &Vec<[f32; 3]>) {
+  info!("send_colors()");
+
   let encoded: Vec<u8> = bincode::serialize(colors).unwrap();
   let str = array_bytes::bytes2hex("", &encoded);
 

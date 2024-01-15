@@ -60,6 +60,7 @@ impl Default for GameResource {
 pub enum GameState {
   // Start,
   #[default]
+  PreStart,
   Start,
   Load,
   Init,

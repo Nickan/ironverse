@@ -58,7 +58,7 @@ fn recv_data_key_from_wasm(send: Sender<WasmMessage>) {
     let key: Key = bincode::deserialize(&bytes).unwrap();
 
     let msg = WasmMessage {
-      key: Some(key),
+      key: Some(key.clone()),
       ..Default::default()
     };
 
@@ -101,6 +101,8 @@ fn recv_data_chunk_from_wasm(send: Sender<WasmMessage>) {
 }
 
 fn recv_colors_from_wasm() {
+  console_ln!("init recv_colors_from_wasm");
+
   let callback = Closure::wrap(Box::new(move |event: CustomEvent | {
     let data = event.detail().as_string().unwrap();
     let bytes = array_bytes::hex2bytes(data).unwrap();
@@ -108,6 +110,8 @@ fn recv_colors_from_wasm() {
 
     COLORS.write().unwrap().clear();
     COLORS.write().unwrap().append(&mut colors.clone());
+
+    console_ln!("recv_colors_from_wasm()");
   }) as Box<dyn FnMut(CustomEvent)>);
 
   let window = web_sys::window().unwrap();
