@@ -31,6 +31,7 @@ pub fn app() {
   recv_data_key_from_wasm(send.clone());
   recv_data_chunk_from_wasm(send.clone());
   recv_colors_from_wasm();
+  send_request_to_get_colors();
 
   spawn_local(async move {
     let ab_js = fetch_as_arraybuffer("./wasm/multithread/multithread.js").await.unwrap();
@@ -123,14 +124,24 @@ fn recv_colors_from_wasm() {
   callback.forget();
 }
 
+fn send_request_to_get_colors() {
+  let str = "";
+  let e = CustomEvent::new_with_event_init_dict(
+    &EventType::WebWorkerLoaded.to_string(), CustomEventInit::new().detail(&JsValue::from_str(&str))
+  ).unwrap();
+
+  let window = web_sys::window().unwrap();
+  let _ = window.dispatch_event(&e);
+}
+
+
+
+
 async fn load_data_from_wasm(
   pool: &ThreadPool,
   recv: Receiver<WasmMessage>
 ) {
-
-  
-  console_ln!("COLORS.len() 1 {}", COLORS.read().unwrap().len());
-
+  // console_ln!("COLORS.len() 1 {}", COLORS.read().unwrap().len());
   while let Ok(msg) = recv.recv_async().await {
     // console_ln!("load_data_from_wasm {:?}", );
 
@@ -242,6 +253,7 @@ pub enum EventType {
   ChunkSend,
   ChunkRecv,
   SendColors,
+  WebWorkerLoaded, // Needed to make sure the colors are loaded, where the webworker is spawned later than bevy instance
 }
 
 impl ToString for EventType {
@@ -252,6 +264,7 @@ impl ToString for EventType {
       EventType::ChunkSend => String::from("ChunkSend"),
       EventType::ChunkRecv => String::from("ChunkRecv"),
       EventType::SendColors => String::from("SendColors"),
+      EventType::WebWorkerLoaded => String::from("WebWorkerLoaded"),
     }
   }
 }

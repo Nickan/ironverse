@@ -20,6 +20,7 @@ fn init(
 ) {
   receive_chunk(local_res.send_chunk.clone());
   receive_mesh(local_res.send_mesh.clone());
+  receive_multithread_workers_loaded(local_res.send_workers_loaded.clone());
 }
 
 
@@ -59,6 +60,33 @@ pub fn receive_mesh(send: Sender<MeshData>) {
 
   callback.forget();
 }
+
+
+pub fn receive_multithread_workers_loaded(send: Sender<bool>) {
+  let callback = Closure::wrap(Box::new(move |_: CustomEvent | {
+
+    info!("receive_multithread_workers_loaded()");
+
+
+    // info!("receive_mesh()");
+
+    // let data = event.detail().as_string().unwrap();
+    // let bytes = array_bytes::hex2bytes(data).unwrap();
+    // let mesh: MeshData = bincode::deserialize(&bytes).unwrap();
+    // let _ = send.send(mesh);
+
+    let _ = send.send(true);
+  }) as Box<dyn FnMut(CustomEvent)>);
+
+  let window = web_sys::window().unwrap();
+  let _ = window.add_event_listener_with_callback(
+    &EventType::WebWorkerLoaded.to_string(),
+    callback.as_ref().unchecked_ref()
+  );
+
+  callback.forget();
+}
+
 
 
 pub fn send_key(key: Key) {
@@ -115,12 +143,16 @@ pub struct PluginResource {
 
   send_mesh: Sender<MeshData>,
   pub recv_mesh: Receiver<MeshData>,
+
+  send_workers_loaded: Sender<bool>,
+  pub recv_workers_loaded: Receiver<bool>,
 }
 
 impl Default for PluginResource {
   fn default() -> Self {
     let (send_chunk, recv_chunk) = flume::unbounded();
     let (send_mesh, recv_mesh) = flume::unbounded();
+    let (send_workers_loaded, recv_workers_loaded) = flume::unbounded();
     Self {
       // timer: Timer::from_seconds(100.0, TimerMode::Repeating),
 
@@ -128,6 +160,9 @@ impl Default for PluginResource {
       recv_chunk: recv_chunk,
       send_mesh: send_mesh,
       recv_mesh: recv_mesh,
+
+      send_workers_loaded: send_workers_loaded,
+      recv_workers_loaded: recv_workers_loaded,
     }
   }
 }

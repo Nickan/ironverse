@@ -10,7 +10,8 @@ impl Plugin for CustomPlugin {
         recv_keys,
         recv_chunk,
         recv_process_mesh,
-        load_mesh
+        load_mesh,
+        webworkers_loaded,
       ));
   }
 }
@@ -52,5 +53,14 @@ fn load_mesh(
 ) {
   for data in plugin_res.recv_mesh.drain() {
     let _ = bevy_voxel_res.send_mesh.send(data);
+  }
+}
+
+fn webworkers_loaded(
+  plugin_res: Res<PluginResource>,
+  bevy_voxel_res: ResMut<BevyVoxelResource>,
+) {
+  for _ in plugin_res.recv_workers_loaded.drain() {
+    let _ = bevy_voxel_res.update_colors();
   }
 }

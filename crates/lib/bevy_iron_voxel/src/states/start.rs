@@ -23,12 +23,12 @@ fn enter(
   if local_res.pre_start_timer.tick(time.delta()).just_finished() {
     game_state_next.set(GameState::Start);
 
-    info!("GameState::Start");
+    // info!("GameState::Start");
   }
 
   if local_res.play_timer.tick(time.delta()).just_finished() {
     game_state_next.set(GameState::Play);
-    info!("GameState::Play");
+    // info!("GameState::Play");
   }
 }
 
