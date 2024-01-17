@@ -63,6 +63,7 @@ pub struct BevyVoxelResource {
   colliders_cache: Vec<ColliderHandle>,
   shape_state: ShapeState,
   edit_state: EditState,
+  pub resource_state: ResourceState,
   pub ranges: Vec<u32>,
 }
 
@@ -79,6 +80,7 @@ impl Default for BevyVoxelResource {
       colliders_cache: Vec::new(),
       shape_state: ShapeState::Cube,
       edit_state: EditState::AddNormal,
+      resource_state: ResourceState::Init,
       ranges: vec![0, 1, 3, 5, 7],
 
       send_key: send_key,
@@ -111,6 +113,15 @@ pub enum ShapeState {
   Cube,
   Sphere,
 }
+
+
+#[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash, States)]
+pub enum ResourceState {
+  #[default]
+  Init,
+  Loaded,
+}
+
 
 #[derive(Component, Clone)]
 pub struct Selected {

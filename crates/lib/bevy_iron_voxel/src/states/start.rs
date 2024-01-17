@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_voxel::{BevyVoxelResource, ResourceState};
 use crate::data::GameState;
 
 pub struct CustomPlugin;
@@ -15,19 +16,34 @@ impl Plugin for CustomPlugin {
 
 fn enter(
   mut game_state_next: ResMut<NextState<GameState>>,
+  game_state: Res<State<GameState>>,
+  bevy_voxel_res: Res<BevyVoxelResource>,
   mut local_res: ResMut<LocalResource>,
   time: Res<Time>,
 ) {
   // info!("enter()");
 
+  if bevy_voxel_res.resource_state == ResourceState::Loaded {
+    if game_state.get() == &GameState::PreStart {
+      game_state_next.set(GameState::Start);
+    }
+  }
+
+
   if local_res.pre_start_timer.tick(time.delta()).just_finished() {
-    game_state_next.set(GameState::Start);
+    // if game_state.get() == &GameState::PreStart {
+    // if bevy_voxel_res.resource_state == ResourceState::Loaded {
+    //   if game_state.get() == &GameState::PreStart { {
+    //     game_state_next.set(GameState::Start);
+    //   }
+    // }
+    
 
     // info!("GameState::Start");
   }
 
   if local_res.play_timer.tick(time.delta()).just_finished() {
-    game_state_next.set(GameState::Play);
+    // game_state_next.set(GameState::Play);
     // info!("GameState::Play");
   }
 }

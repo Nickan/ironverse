@@ -85,7 +85,7 @@ impl Plugin for VoxelWorldPlugin {
             1.0, 
             range, 
             DEFAULT_COLOR_PALETTE.to_vec(),
-            vec![0, range as u32, 4, 6, 8],
+            vec![0, range as u32, 3, 4, 5],
           ))
           .add_plugins(data::CustomPlugin)
           // .add_plugins(physics::CustomPlugin)

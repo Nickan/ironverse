@@ -3,7 +3,7 @@ use rapier3d::{prelude::{Vector, ColliderHandle, Ray, QueryFilter}, na::Point3};
 use utils::{RayUtils, Utils};
 use voxels::{chunk::{chunk_manager::{ChunkManager, Chunk}, adjacent_keys}, data::{voxel_octree::{VoxelMode, MeshData}, surface_nets::VoxelReuse}};
 use voxels::utils::key_to_world_coord_f32;
-use crate::{BevyVoxelResource, physics::Physics, Preview, ShapeState, EditState, ChunkMesh};
+use crate::{BevyVoxelResource, physics::Physics, Preview, ShapeState, EditState, ChunkMesh, ResourceState};
 use crate::util::*;
 
 use cfg_if::cfg_if;
@@ -35,10 +35,11 @@ impl BevyVoxelResource {
       colliders_cache: Vec::new(),
       shape_state: ShapeState::Cube,
       edit_state: EditState::AddNormal,
+      resource_state: ResourceState::Init,
       ranges: ranges,
       ..Default::default()
     };
-    res.update_colors();
+    // res.update_colors();
     res
   }
 

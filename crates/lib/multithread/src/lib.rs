@@ -31,7 +31,7 @@ pub fn app() {
   recv_data_key_from_wasm(send.clone());
   recv_data_chunk_from_wasm(send.clone());
   recv_colors_from_wasm();
-  send_request_to_get_colors();
+  
 
   spawn_local(async move {
     let ab_js = fetch_as_arraybuffer("./wasm/multithread/multithread.js").await.unwrap();
@@ -46,6 +46,8 @@ pub fn app() {
     console_ln!("max threads {} current threads {}", max_threads, threads);
     let pool = ThreadPool::new_with_arraybuffers(threads, ab_js, ab_wasm)
       .and_init().await.unwrap();
+
+    send_request_to_get_colors();
 
     // load_data(&pool, recv_queue, recv_chunk).await;
     load_data_from_wasm(&pool, recv).await;

@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use multithread::plugin::{PluginResource, send_key, Key, send_chunk};
 use crate::BevyVoxelResource;
+use crate::ResourceState;
+
 
 pub struct CustomPlugin;
 impl Plugin for CustomPlugin {
@@ -58,9 +60,10 @@ fn load_mesh(
 
 fn webworkers_loaded(
   plugin_res: Res<PluginResource>,
-  bevy_voxel_res: ResMut<BevyVoxelResource>,
+  mut bevy_voxel_res: ResMut<BevyVoxelResource>,
 ) {
   for _ in plugin_res.recv_workers_loaded.drain() {
     let _ = bevy_voxel_res.update_colors();
+    bevy_voxel_res.resource_state = ResourceState::Loaded;
   }
 }
