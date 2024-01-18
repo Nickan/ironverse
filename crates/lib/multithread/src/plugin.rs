@@ -11,7 +11,8 @@ impl Plugin for CustomPlugin {
   fn build(&self, app: &mut App) {
     app
       .insert_resource(PluginResource::default())
-      .add_systems(Startup, init);
+      .add_systems(Startup, init)
+      .add_systems(Update, update_start);
   }
 }
 
@@ -23,6 +24,29 @@ fn init(
   receive_multithread_workers_loaded(local_res.send_workers_loaded.clone());
 }
 
+
+fn update_start(
+  mut local_res: ResMut<PluginResource>,
+) {
+  if local_res.are_workers_loaded {
+    return;
+  }
+
+  let window = web_sys::window().expect("no global `window` exists");
+  let document = window.document().expect("should have a document on window");
+
+  let val = document.get_element_by_id("state")
+    .unwrap()
+    .dyn_into::<web_sys::Element>()
+    .unwrap();
+
+  
+  if val.has_attribute("data-bevy") && val.has_attribute("data-multithread") {
+    let _ = local_res.send_workers_loaded.send(true);
+    local_res.are_workers_loaded = true;
+  }
+
+}
 
 pub fn receive_chunk(send: Sender<Chunk>) {
   let callback = Closure::wrap(Box::new(move |event: CustomEvent | {
@@ -75,7 +99,19 @@ pub fn receive_multithread_workers_loaded(send: Sender<bool>) {
     // let mesh: MeshData = bincode::deserialize(&bytes).unwrap();
     // let _ = send.send(mesh);
 
-    let _ = send.send(true);
+    // let _ = send.send(true);
+
+    // let window = web_sys::window().expect("no global `window` exists");
+    // let document = window.document().expect("should have a document on window");
+
+    // let val = document.get_element_by_id("state")
+    //   .unwrap()
+    //   .dyn_into::<web_sys::Element>()
+    //   .unwrap();
+
+    // let _ = val.set_attribute("data-multithread", "1");
+
+
   }) as Box<dyn FnMut(CustomEvent)>);
 
   let window = web_sys::window().unwrap();
@@ -146,6 +182,8 @@ pub struct PluginResource {
 
   send_workers_loaded: Sender<bool>,
   pub recv_workers_loaded: Receiver<bool>,
+
+  are_workers_loaded: bool,
 }
 
 impl Default for PluginResource {
@@ -163,6 +201,7 @@ impl Default for PluginResource {
 
       send_workers_loaded: send_workers_loaded,
       recv_workers_loaded: recv_workers_loaded,
+      are_workers_loaded: false,
     }
   }
 }

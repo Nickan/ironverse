@@ -27,6 +27,7 @@ utils = { path = "../../lib/utils", optional = true }
 version = "0.3.61"
 features = [
   "Document",
+  "Element",
   "HtmlElement", 
   "ErrorEvent", 
   "Window",

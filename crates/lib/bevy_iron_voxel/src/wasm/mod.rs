@@ -4,6 +4,7 @@ use web_sys::HtmlElement;
 use flume::*;
 use wasm_bindgen::prelude::*;
 use crate::{input::MouseInput, data::{CursorState, UIState}};
+use crate::data::GameState;
 
 pub struct CustomPlugin;
 impl Plugin for CustomPlugin {
@@ -20,8 +21,8 @@ impl Plugin for CustomPlugin {
       ;
 
     app
-      .add_systems(Startup, startup)
-      .add_systems(Update, send_mouse_events);
+      .add_systems(Startup, (startup, set_bevy_loaded))
+      .add_systems(Update, (send_mouse_events, start_game));
   }
 }
 
@@ -51,6 +52,44 @@ fn startup(local_res: Res<LocalResource>,) {
   // window.set_onkeydown(Some(cb.as_ref().unchecked_ref()));
   // cb.forget();
 }
+
+fn set_bevy_loaded() {
+  let window = web_sys::window().expect("no global `window` exists");
+  let document = window.document().expect("should have a document on window");
+
+  let val = document.get_element_by_id("state")
+		.unwrap()
+		.dyn_into::<web_sys::Element>()
+    .unwrap();
+
+  let _ = val.set_attribute("data-bevy", "1");
+
+  // info!("{:?}", val.get_attribute("data-bevy"));
+}
+
+
+
+fn start_game(
+  mut game_state_next: ResMut<NextState<GameState>>,
+  game_state: Res<State<GameState>>,
+) {
+  if game_state.get() == &GameState::PreStart {
+    let window = web_sys::window().expect("no global `window` exists");
+    let document = window.document().expect("should have a document on window");
+
+    let val = document.get_element_by_id("state")
+      .unwrap()
+      .dyn_into::<web_sys::Element>()
+      .unwrap();
+
+    if val.has_attribute("data-bevy") && val.has_attribute("data-multithread") {
+      game_state_next.set(GameState::Start);
+    }
+  }
+
+  
+}
+
 
 fn send_mouse_events(
   local_res: Res<LocalResource>,

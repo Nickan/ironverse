@@ -127,13 +127,24 @@ fn recv_colors_from_wasm() {
 }
 
 fn send_request_to_get_colors() {
-  let str = "";
-  let e = CustomEvent::new_with_event_init_dict(
-    &EventType::WebWorkerLoaded.to_string(), CustomEventInit::new().detail(&JsValue::from_str(&str))
-  ).unwrap();
 
-  let window = web_sys::window().unwrap();
-  let _ = window.dispatch_event(&e);
+  let window = web_sys::window().expect("no global `window` exists");
+  let document = window.document().expect("should have a document on window");
+
+  let val = document.get_element_by_id("state")
+    .unwrap()
+    .dyn_into::<web_sys::Element>()
+    .unwrap();
+
+  let _ = val.set_attribute("data-multithread", "1");
+
+  // let str = "";
+  // let e = CustomEvent::new_with_event_init_dict(
+  //   &EventType::WebWorkerLoaded.to_string(), CustomEventInit::new().detail(&JsValue::from_str(&str))
+  // ).unwrap();
+
+  // let window = web_sys::window().unwrap();
+  // let _ = window.dispatch_event(&e);
 }
 
 

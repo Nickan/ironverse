@@ -23,11 +23,11 @@ fn enter(
 ) {
   // info!("enter()");
 
-  if bevy_voxel_res.resource_state == ResourceState::Loaded {
-    if game_state.get() == &GameState::PreStart {
-      game_state_next.set(GameState::Start);
-    }
-  }
+  // if bevy_voxel_res.resource_state == ResourceState::Loaded {
+  //   if game_state.get() == &GameState::PreStart {
+  //     game_state_next.set(GameState::Start);
+  //   }
+  // }
 
 
   if local_res.pre_start_timer.tick(time.delta()).just_finished() {

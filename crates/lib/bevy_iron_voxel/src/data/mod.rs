@@ -58,9 +58,10 @@ impl Default for GameResource {
 
 #[derive(States, PartialEq, Eq, Debug, Clone, Hash, Default)]
 pub enum GameState {
-  // Start,
   #[default]
   PreStart,
+
+  // #[default]
   Start,
   Load,
   Init,
